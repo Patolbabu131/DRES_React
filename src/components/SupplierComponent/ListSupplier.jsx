@@ -1,47 +1,50 @@
 import { useState, useEffect, useRef } from 'react';
+import ApiClient from '../../services/SupplerService';
 import { useOutletContext } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import toast, { Toaster } from 'react-hot-toast';
-import UserService from '../../services/UserService';
-import AddUserModal from './AddUserModel';
-//  import EditUserModal from './EditUserModal';
+import AddSupplierModal from './AddSupplierModal';
+import EditSupplierModal from './EditSupplierModal';
+import toast from 'react-hot-toast';
 
-const ListUser = () => {
-  const [users, setUsers] = useState([]);
+const ListSupplier = () => {
+  const [suppliers, setSuppliers] = useState([]);
   const { setIsLoading, isLoading } = useOutletContext();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
   const { isDark } = useTheme();
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [editingSupplier, setEditingSupplier] = useState(null);
   const [viewMode, setViewMode] = useState('table');
   const effectRan = useRef(false);
   const itemsPerPage = 10;
 
-  // Map header names to actual user object keys
-  const headerToKeyMap = {
-    id: 'id',
-    Username: 'username',
-    SiteName: 'siteName',
-    Role: 'role',
-    Phone: 'phone',
-    // "actions" is not mapped since you probably don't want sorting on it
-  };
+  // Define columns with labels and keys (Actions has no key for sorting)
+  const columns = [
+    { label: 'ID', key: 'id' },
+    { label: 'GST', key: 'gst' },
+    { label: 'Company Name', key: 'company_name' },
+    { label: 'Contact Name', key: 'contact_name' },
+    { label: 'Phone', key: 'phone1' },
+    { label: 'Address', key: 'address' },
+    { label: 'Actions', key: null },
+  ];
 
-  // Fetch users data on component mount
+  // Fetch supplier data on component mount
   useEffect(() => {
     const fetchData = async () => {
       if (effectRan.current) return;
       effectRan.current = true;
       setIsLoading(true);
       try {
-        const response = await UserService.getAllUsers();
-        setUsers(response.data.data);
+        const response = await ApiClient.getAllSupplier();
+        // Assuming API response structure:
+        // { message: "Success", data: [ { id, company_name, contact_name, gst, phone1, phone2, address, transactions } ] }
+        setSuppliers(response.data.data);
       } catch (error) {
-        toast.error("Server Not Responding");
+        toast.error("Server not responding");
         console.error(error);
       } finally {
         setIsLoading(false);
@@ -50,33 +53,24 @@ const ListUser = () => {
     fetchData();
   }, [setIsLoading]);
 
-  // Set dark mode
+  // Toggle dark mode classes
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     document.body.style.backgroundColor = isDark ? '#000' : '';
   }, [isDark]);
 
-  // Check screen size and adjust view mode accordingly
+  // Adjust view mode based on screen size
   useEffect(() => {
     const handleResize = () => {
       setViewMode(window.innerWidth < 768 ? 'cards' : 'table');
     };
-
-    // Initial check
     handleResize();
-
-    // Add event listener
     window.addEventListener('resize', handleResize);
-
-    // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
 
-  // Update handleSort to use headerToKeyMap
-  const handleSort = (header) => {
-    const key = headerToKeyMap[header];
-    if (!key) return; // If header is "actions", do nothing
+  // Sorting function
+  const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -84,32 +78,35 @@ const ListUser = () => {
     setSortConfig({ key, direction });
   };
 
-  const handleEditUser = (user) => {
-    setEditingUser(user);
+  // Edit supplier
+  const handleEditSupplier = (supplier) => {
+    setEditingSupplier(supplier);
     setIsEditModalOpen(true);
   };
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(user => {
+  // Filter suppliers based on search query
+  const filteredSuppliers = suppliers.filter(supplier => {
     const query = searchQuery.toLowerCase();
-    return Object.values(user).some(value =>
-      value.toString().toLowerCase().includes(query)
+    return Object.values(supplier).some(value =>
+      value?.toString().toLowerCase().includes(query)
     );
   });
 
-  // Sort filtered users
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
+  // Sort filtered suppliers with null/undefined treated as blank
+  const sortedSuppliers = [...filteredSuppliers].sort((a, b) => {
     if (!sortConfig.key) return 0;
-    if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+    const aValue = a[sortConfig.key] ?? '';
+    const bValue = b[sortConfig.key] ?? '';
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;
   });
 
-  // Pagination
+  // Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = sortedUsers.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+  const currentItems = sortedSuppliers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedSuppliers.length / itemsPerPage);
 
   const goToPage = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -117,47 +114,15 @@ const ListUser = () => {
     }
   };
 
-  // Table headers
-  const tableHeaders = ['id', 'Username', 'SiteName', 'Role', 'Phone', 'actions'];
-
-  // Helper function to format role text
-  const formatRole = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'Admin';
-      case 'sitemanager':
-        return 'Site Manager';
-      case 'siteengineer':
-        return 'Site Engineer';
-      default:
-        return role;
-    }
-  };
-
-  // Helper function to get role badge color
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'sitemanager':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'siteengineer':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  };
-
   return (
     <div className="container mx-auto px-5 sm:px-4 max-w-7xl min-h-screen relative">
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3 py-3">
-        {/* Title and Toggle Button in same row for mobile */}
         <div className="w-full flex justify-between items-center">
           <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
-            Users Management
+            Suppliers Management
           </h1>
-          {/* View toggle for mobile - now inline with title */}
+          {/* Toggle view button for mobile */}
           <div className="sm:hidden flex">
             <button
               onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
@@ -165,7 +130,7 @@ const ListUser = () => {
             >
               {viewMode === 'table' ? (
                 <>
-                  <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
                     <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
                     <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
@@ -175,7 +140,7 @@ const ListUser = () => {
                 </>
               ) : (
                 <>
-                  <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none">
                     <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                   Table View
@@ -184,11 +149,10 @@ const ListUser = () => {
             </button>
           </div>
         </div>
-
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full sm:w-auto">
           <input
             type="text"
-            placeholder="Search Users..."
+            placeholder="Search Suppliers..."
             className="flex-grow p-2 sm:p-1.5 border rounded-lg bg-white dark:bg-darkSurface text-gray-900 dark:text-gray-100 border-gray-300 dark:border-darkPrimary/20 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm transition-colors"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -199,25 +163,28 @@ const ListUser = () => {
             onClick={() => setIsModalOpen(true)}
             disabled={isLoading}
           >
-            Add User
+            Add Supplier
           </button>
         </div>
       </div>
 
+      {/* Table View */}
       {viewMode === 'table' && (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-darkPrimary/20">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-darkPrimary/20">
             <thead className="bg-gray-50 dark:bg-darkSurface/50">
               <tr>
-                {tableHeaders.map((header) => (
+                {columns.map((col) => (
                   <th
-                    key={header}
-                    onClick={() => handleSort(header)}
-                    className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-darkPrimary/20"
+                    key={col.label}
+                    onClick={() => {
+                      if (col.key) handleSort(col.key);
+                    }}
+                    className={`px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-darkPrimary/20 ${!col.key ? 'cursor-default' : ''}`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs">{header}</span>
-                      {sortConfig.key === headerToKeyMap[header] && (
+                      <span className="text-xs">{col.label}</span>
+                      {col.key && sortConfig.key === col.key && (
                         <span className="ml-1.5 text-xs">
                           {sortConfig.direction === 'asc' ? '↑' : '↓'}
                         </span>
@@ -229,27 +196,24 @@ const ListUser = () => {
             </thead>
             <tbody className="bg-white dark:bg-darkSurface divide-y divide-gray-200 dark:divide-darkPrimary/20">
               {currentItems.length > 0 ? (
-                currentItems.map((user) => (
+                currentItems.map((supplier) => (
                   <tr 
-                    key={user.id} 
-                    className={`hover:bg-gray-50 dark:hover:bg-darkPrimary/10 cursor-pointer ${selectedUser && selectedUser.id === user.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-3 border-blue-500 dark:border-blue-400' : ''}`}
-                    onClick={() => setSelectedUser(user)}
+                    key={supplier.id} 
+                    className={`hover:bg-gray-50 dark:hover:bg-darkPrimary/10 cursor-pointer ${selectedSupplier && selectedSupplier.id === supplier.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-3 border-blue-500 dark:border-blue-400' : ''}`}
+                    onClick={() => setSelectedSupplier(supplier)}
                   >
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{user.id}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{user.username}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{user.siteName || '-'}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${getRoleBadgeColor(user.role)}`}>
-                        {formatRole(user.role)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{user.phone}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{supplier.id}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{supplier.gst || ''}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{supplier.company_name || ''}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{supplier.contact_name || ''}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{supplier.phone1 || ''}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{supplier.address || ''}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditUser(user);
+                            handleEditSupplier(supplier);
                           }}
                           className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                           aria-label="Edit"
@@ -264,8 +228,8 @@ const ListUser = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No users found
+                  <td colSpan={columns.length} className="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No suppliers found
                   </td>
                 </tr>
               )}
@@ -278,33 +242,29 @@ const ListUser = () => {
       {viewMode === 'cards' && (
         <div className="grid grid-cols-1 gap-4">
           {currentItems.length > 0 ? (
-            currentItems.map((user) => (
+            currentItems.map((supplier) => (
               <div 
-                key={user.id} 
-                className={`rounded-lg border p-4 ${
-                  selectedUser && selectedUser.id === user.id 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                    : 'border-gray-200 dark:border-darkPrimary/20 bg-white dark:bg-darkSurface'
-                }`}
-                onClick={() => setSelectedUser(user)}
+                key={supplier.id} 
+                className={`rounded-lg border p-4 ${selectedSupplier && selectedSupplier.id === supplier.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-darkPrimary/20 bg-white dark:bg-darkSurface'}`}
+                onClick={() => setSelectedSupplier(supplier)}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">{user.username}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">ID: {supplier.id}</p>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">{supplier.company_name || ''}</h3>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${getRoleBadgeColor(user.role)}`}>
-                    {formatRole(user.role)}
-                  </span>
                 </div>
                 <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                  <p className="mb-1"><span className="font-medium">Phone:</span> {user.phone}</p>
-                  <p className="mb-1"><span className="font-medium">Site:</span> {user.siteName || '-'}</p>
+                  <p className="mb-1"><span className="font-medium">GST:</span> {supplier.gst || ''}</p>
+                  <p className="mb-1"><span className="font-medium">Contact:</span> {supplier.contact_name || ''}</p>
+                  <p className="mb-1"><span className="font-medium">Phone:</span> {supplier.phone1 || ''}</p>
+                  <p className="mb-1"><span className="font-medium">Address:</span> {supplier.address || ''}</p>
                 </div>
                 <div className="mt-3 pt-2 border-t border-gray-100 dark:border-darkPrimary/10 flex justify-end gap-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleEditUser(user);
+                      handleEditSupplier(supplier);
                     }}
                     className="rounded-md bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300"
                   >
@@ -315,7 +275,7 @@ const ListUser = () => {
             ))
           ) : (
             <div className="text-center p-4 bg-white dark:bg-darkSurface rounded-lg border border-gray-200 dark:border-darkPrimary/20">
-              <p className="text-gray-500 dark:text-gray-400">No users found</p>
+              <p className="text-gray-500 dark:text-gray-400">No suppliers found</p>
             </div>
           )}
         </div>
@@ -324,8 +284,8 @@ const ListUser = () => {
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3 px-1">
         <div className="text-xs text-gray-600 dark:text-gray-400 order-2 sm:order-1">
-          {sortedUsers.length > 0 ? 
-            `Showing ${indexOfFirstItem + 1} to ${Math.min(indexOfLastItem, sortedUsers.length)} of ${sortedUsers.length} entries` : 
+          {sortedSuppliers.length > 0 ? 
+            `Showing ${indexOfFirstItem + 1} to ${Math.min(indexOfLastItem, sortedSuppliers.length)} of ${sortedSuppliers.length} entries` : 
             'No entries to show'}
         </div>
         <div className="flex gap-2 order-1 sm:order-2">
@@ -349,38 +309,37 @@ const ListUser = () => {
         </div>
       </div>
 
-      <AddUserModal 
+      {/* Modals */}
+      <EditSupplierModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingSupplier(null);
+        }}
+        onSuccess={(updatedSupplier) => {
+          setSuppliers(prevSuppliers => prevSuppliers.map(supplier => supplier.id === updatedSupplier.id ? updatedSupplier : supplier));
+          toast.success(`Updated Successfully`);
+        }}
+        onError={(message) => {
+          toast.error(message);
+        }}
+        supplier={editingSupplier}
+      /> 
+       
+      <AddSupplierModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        onSuccess={(newUser) => {
-          setUsers(prev => [newUser, ...prev]);
-          toast.success(`User Created Successfully`);
+        onSuccess={(newSupplier) => {
+          setSuppliers(prev => [newSupplier, ...prev]);
+          toast.success(`Supplier Created Successfully`);
         }}
         onError={(message) => {
           toast.error(message);
           console.error(message);
         }}
       />
-
-      {/*
-      <EditUserModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingUser(null);
-        }}
-        onSuccess={(updatedUser) => {
-          setUsers(prevUsers => prevUsers.map(user => user.id === updatedUser.id ? updatedUser : user));
-          toast.success(`Updated Successfully`);
-        }}
-        onError={(message) => {
-          toast.error(message);
-        }}
-        user={editingUser}
-      />
-      */}
     </div>
   );
 };
 
-export default ListUser;
+export default ListSupplier;

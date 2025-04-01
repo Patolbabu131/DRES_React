@@ -37,7 +37,7 @@ const validationRules = {
   }
 };
 
-// Role options with values that need to be sent to API
+// Original role options
 const roleOptions = [
   { id: 1, name: "Site Manager" },
   { id: 2, name: "Site Engineer" }
@@ -50,9 +50,28 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [layout, setLayout] = useState('vertical');
   const [sites, setSites] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const userRoles = AuthService.getUserRoles();
+  const isSiteManager = userRoles.includes('sitemanager');
+
+  // Filter role options based on current user role
+  const filteredRoleOptions = isSiteManager
+    ? roleOptions.filter(role => role.id === 2) // Only Site Engineer option
+    : roleOptions;
+
+  // When modal opens, reset form data and default the role if necessary
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialFormData);
+      setErrors({});
+
+      if (isSiteManager) {
+        setFormData(prev => ({ ...prev, role: '2' }));
+      }
+    }
+  }, [isOpen, isSiteManager]);
 
   // Fetch sites when modal opens
   useEffect(() => {
@@ -74,30 +93,6 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
       setIsLoading(false);
     }
   };
-
-  // Optimized layout detection with debounce for better performance
-  useEffect(() => {
-    const handleResize = () => {
-      const newLayout = window.innerWidth > 640 ? 'horizontal' : 'vertical';
-      setLayout(newLayout);
-    };
-
-    // Initial check
-    handleResize();
-
-    // Debounced resize handler
-    let timeoutId;
-    const debouncedResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleResize, 100);
-    };
-
-    window.addEventListener('resize', debouncedResize);
-    return () => {
-      window.removeEventListener('resize', debouncedResize);
-      clearTimeout(timeoutId);
-    };
-  }, []);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -157,7 +152,6 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
       if (onSuccess) onSuccess(response.data.data);
       setFormData(initialFormData);
       onClose();
-      toast.success('User added successfully');
     } catch (error) {
       const serverMessage = error.response?.data?.message;
       const clientMessage = serverMessage || error.message || 'Failed to add user';
@@ -187,23 +181,22 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
       role="dialog"
       className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm overscroll-contain"
       aria-modal="true"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
     > 
       <div 
-        className={`rounded-xl p-4 sm:p-6 w-full max-w-md mx-auto border overflow-y-auto max-h-[90vh]
+        className={`rounded-xl p-6 w-full max-w-2xl mx-auto border overflow-y-auto max-h-[90vh]
           ${isDark ? 'bg-darkSurface text-gray-100 border-darkPrimary/20' : 'bg-lightSurface text-gray-900 border-gray-200'} 
           shadow-lg transition-colors`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="text-xl font-semibold mb-6">
           Add New User
         </h2>
         
         <form onSubmit={handleSubmit} noValidate>
-          <div className={`${layout === 'horizontal' ? 'grid grid-cols-2 gap-4' : 'space-y-3'} mb-4`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4`}>
             {/* Username */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -222,8 +215,8 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             {/* Phone Number */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 Phone Number <span className="text-red-500">*</span>
               </label>
               <input
@@ -242,8 +235,8 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             {/* Role Selection */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 Role <span className="text-red-500">*</span>
               </label>
               <select
@@ -257,7 +250,7 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                 <option value="" className={isDark ? 'bg-darkSurface text-gray-100' : 'bg-lightSurface text-gray-900'}>
                   Select Role
                 </option>
-                {roleOptions.map((role) => (
+                {filteredRoleOptions.map((role) => (
                   <option
                     key={role.id}
                     value={role.id}
@@ -273,8 +266,8 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             {/* Site Selection */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 Site <span className="text-red-500">*</span>
               </label>
               <select
@@ -304,7 +297,7 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-3 mt-5">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}

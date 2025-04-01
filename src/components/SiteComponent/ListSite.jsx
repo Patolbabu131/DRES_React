@@ -262,7 +262,6 @@ const ListSite = () => {
                     key={site.id} 
                     className={`hover:bg-gray-50 dark:hover:bg-darkPrimary/10 cursor-pointer ${selectedSite && selectedSite.id === site.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-3 border-blue-500 dark:border-blue-400' : ''}`}
                     onClick={() => setSelectedSite(site)}
-                    onDoubleClick={() => handleEditSite(site)}
                   >
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{site.id}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{site.sitename}</td>

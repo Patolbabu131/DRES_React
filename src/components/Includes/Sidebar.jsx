@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, activeNav, setActiveNav, navigation }) => {
   return (
     <aside
-      className={`fixed top-16 h-[calc(100vh-4rem)] z-30 bg-white/95 dark:bg-darkSurface/95 backdrop-blur-sm border-r border-lightPrimary/20 dark:border-darkPrimary/20 transition-all duration-300 ${
+      className={`fixed top-14 h-[calc(100vh-3rem)] z-30 bg-white/95 dark:bg-darkSurface/95 backdrop-blur-sm border-r border-lightPrimary/20 dark:border-darkPrimary/20 transition-all duration-300 ${
         isCollapsed ? 'w-16' : 'w-48'
       } ${isMobile ? (isCollapsed ? '-translate-x-full' : 'translate-x-0') : ''}`}
     >

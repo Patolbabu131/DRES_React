@@ -7,7 +7,9 @@ import Layout from './components/includes/Layout';
 import Login from './components/AuthComponent/Login';
 import Site from './components/SiteComponent/ListSite';
 import User from './components/UserComponent/ListUser';
+import Supplier from './components/SupplierComponent/ListSupplier';
 import ProtectedRoute from './components/context/ProtectedRoute'; 
+
 
 const router = createBrowserRouter([
   {
@@ -24,6 +26,7 @@ const router = createBrowserRouter([
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/site", element: <Site /> },
       { path: "/user", element: <User /> },
+      {path:"/supplier", element: <Supplier />}
     ]
   } 
 ]);

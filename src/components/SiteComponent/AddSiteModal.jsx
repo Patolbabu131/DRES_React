@@ -48,31 +48,6 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [layout, setLayout] = useState('vertical');
-
-  // Optimized layout detection with debounce for better performance
-  useEffect(() => {
-    const handleResize = () => {
-      const newLayout = window.innerWidth > 640 ? 'horizontal' : 'vertical';
-      setLayout(newLayout);
-    };
-
-    // Initial check
-    handleResize();
-
-    // Debounced resize handler
-    let timeoutId;
-    const debouncedResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleResize, 100);
-    };
-
-    window.addEventListener('resize', debouncedResize);
-    return () => {
-      window.removeEventListener('resize', debouncedResize);
-      clearTimeout(timeoutId);
-    };
-  }, []);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -163,20 +138,20 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     > 
       <div 
-        className={`rounded-xl p-4 sm:p-6 w-full max-w-md mx-auto border overflow-y-auto max-h-[90vh]
+        className={`rounded-xl p-6 w-full max-w-2xl mx-auto border overflow-y-auto max-h-[90vh]
           ${isDark ? 'bg-darkSurface text-gray-100 border-darkPrimary/20' : 'bg-lightSurface text-gray-900 border-gray-200'} 
           shadow-lg transition-colors`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="text-xl font-semibold mb-6">
           Add New Site
         </h2>
         
         <form onSubmit={handleSubmit} noValidate>
-          <div className={`${layout === 'horizontal' ? 'grid grid-cols-2 gap-4' : 'space-y-3'} mb-4`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4`}>
             {/* Sitename */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 Sitename <span className="text-red-500">*</span>
               </label>
               <input
@@ -195,8 +170,8 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             {/* Siteaddress */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 Siteaddress <span className="text-red-500">*</span>
               </label>
               <input
@@ -215,8 +190,8 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             {/* State Field */}
-            <div className={layout === 'horizontal' ? "col-span-2" : ""}>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-1">
+              <label className="block text-sm font-medium mb-2">
                 State <span className="text-red-500">*</span>
               </label>
               <select
@@ -246,8 +221,8 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             {/* Description Field */}
-            <div className={layout === 'horizontal' ? "col-span-2" : ""}>
-              <label className="block text-sm font-medium mb-1">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-2">
                 Description
               </label>
               <textarea
@@ -258,13 +233,13 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
                   ? 'border-gray-600 focus:ring-darkPrimary' 
                   : 'border-gray-300 focus:ring-lightPrimary'
                 }`}
-                rows="2"
+                rows="3"
                 disabled={isSubmitting}
               />
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-3 mt-5">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}

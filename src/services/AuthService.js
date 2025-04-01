@@ -101,6 +101,27 @@ export const AuthService = {
       return null;
     }
   },
+
+  getUsername: () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      
+      const decoded = jwtDecode(token);
+      const usernameClaim = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name';
+      
+      // Return the username from the known claim or any fallback properties
+      return (
+        decoded[usernameClaim] ||
+        decoded.username ||
+        decoded.name ||
+        null
+      );
+    } catch (error) {
+      console.error('Error getting username:', error);
+      return null;
+    }
+  },
   
   refreshToken: async () => {
     try {

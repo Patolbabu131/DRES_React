@@ -35,7 +35,7 @@ const Layout = () => {
       segment: 'user', 
       path: '/user'
     },
-    { name: 'Suppliers', icon: <RiContactsLine />, segment: 'suppliers', path: '/suppliers' },
+    { name: 'Supplier', icon: <RiContactsLine />, segment: 'supplier', path: '/supplier' },
     { name: 'Unit Types', icon: <RiRulerLine />, segment: 'unit-types', path: '/unit-types' },
     { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/materials' },
     { 
@@ -148,7 +148,7 @@ const Layout = () => {
                           border-t-lightPrimary dark:border-t-darkPrimary rounded-full animate-spin" />
         </div>
       )}
-      <div className="px-0.4 md:px-6 py-6 max-w-7xl mx-auto">
+      <div class="px-0.4 md:px-6 pt-1 pb-6 max-w-7xl mx-auto">
         <Outlet context={{ isLoading, setIsLoading }} />
       </div>
     </main>
