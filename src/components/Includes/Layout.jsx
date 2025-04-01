@@ -36,7 +36,7 @@ const Layout = () => {
       path: '/user'
     },
     { name: 'Supplier', icon: <RiContactsLine />, segment: 'supplier', path: '/supplier' },
-    { name: 'Unit Types', icon: <RiRulerLine />, segment: 'unit-types', path: '/unit-types' },
+    { name: 'Unittype', icon: <RiRulerLine />, segment: 'unittype', path: '/unittype' },
     { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/materials' },
     { 
       name: 'Reports', 
