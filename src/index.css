@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Complete fix for autofill styling issues */
+@layer base {
+  /* Override browser default autofill styles */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    /* Completely disable the autofill background */
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    box-shadow: 0 0 0 1000px transparent inset !important;
+    -webkit-text-fill-color: currentColor !important;
+    -webkit-transition: background-color 9999s, color 9999s;
+    transition: background-color 9999s, color 9999s;
+    caret-color: currentColor;
+  }
+  
+  /* Force transparency on autofilled inputs */
+  input:-webkit-autofill {
+    background-color: transparent !important;
+  }
+}
