@@ -10,6 +10,7 @@ import User from './components/UserComponent/ListUser';
 import Supplier from './components/SupplierComponent/ListSupplier';
 import ProtectedRoute from './components/context/ProtectedRoute'; 
 import Unittype from './components/UnitsComponent/ListUnits';
+import Material from './components/MaterialComponent/ListMaterials';
 
 
 const router = createBrowserRouter([
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: "/user", element: <User /> },
       {path:"/supplier", element: <Supplier />},
       {path:"/unittype", element: <Unittype />},
+      {path:"/material", element:<Material/>}
     ]
   } 
 ]);

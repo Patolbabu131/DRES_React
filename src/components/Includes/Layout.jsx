@@ -37,18 +37,18 @@ const Layout = () => {
     },
     { name: 'Supplier', icon: <RiContactsLine />, segment: 'supplier', path: '/supplier' },
     { name: 'Unittype', icon: <RiRulerLine />, segment: 'unittype', path: '/unittype' },
-    { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/materials' },
-    { 
-      name: 'Reports', 
-      icon: <RiBarChartLine />,
-      segment: 'reports',
-      path: '/reports',
-      children: [
-        { name: 'Sales', icon: <HiDocumentText />, segment: 'sales', path: '/sales' },
-        { name: 'Traffic', icon: <HiDocumentText />, segment: 'traffic', path: '/traffic' },
-      ]
-    },
-    { name: 'Orders', icon: <RiShoppingCartLine />, segment: 'orders', path: '/orders' },
+    { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/material' },
+    // { 
+    //   name: 'Reports', 
+    //   icon: <RiBarChartLine />,
+    //   segment: 'reports',
+    //   path: '/reports',
+    //   children: [
+    //     { name: 'Sales', icon: <HiDocumentText />, segment: 'sales', path: '/sales' },
+    //     { name: 'Traffic', icon: <HiDocumentText />, segment: 'traffic', path: '/traffic' },
+    //   ]
+    // },
+    // { name: 'Orders', icon: <RiShoppingCartLine />, segment: 'orders', path: '/orders' },
   ];
 
   useEffect(() => {
