@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import Sidebar from './Sidebar';
 import { Toaster, toast } from 'react-hot-toast';
 import { RiCheckLine, RiCloseLine } from 'react-icons/ri';
+import { useAuth } from '../context/AuthContext';
 
 import { 
   RiDashboardLine, 
@@ -15,7 +16,20 @@ import {
   RiBuildingLine,
   RiContactsLine,
   RiRulerLine,
-  RiArchiveLine
+  RiStoreLine ,
+  RiArchiveLine,
+  RiStockLine ,RiBox2Line , RiPaletteLine,  
+
+
+  RiStore2Line,
+  RiShoppingBagLine,
+  RiShoppingBagFill,
+  RiShoppingBasketLine,
+  RiShoppingBasketFill,
+  RiStackFill,RiSendPlaneLine  ,RiFileListLine ,RiClipboardLine ,
+  RiScissorsCutLine ,RiBarChartBoxLine ,RiFlashlightLine,  
+  RiNotificationLine ,RiMessageLine ,RiAlarmWarningLine ,RiMegaphoneLine 
+
 } from 'react-icons/ri';
 import { HiDocumentText } from 'react-icons/hi';
 
@@ -25,19 +39,35 @@ const Layout = () => {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [activeNav, setActiveNav] = useState('dashboard');
   const { isDark } = useTheme();
+  const {  isAdmin, isSiteManager, isSiteEngineer } = useAuth();
+  const { hasRole } = useAuth();
 
   const navigation = [
-    { name: 'Dashboard', icon: <RiDashboardLine />, segment: 'dashboard', path: '/dashboard' },
-    { name: 'Sites', icon: <RiBuildingLine />, segment: 'site', path: '/site' },
+   
+    { name: 'Stock', icon: <RiStackFill   />, segment: 'stock', path: '/stock' , roles: ['admin', 'sitemanager', 'siteengineer'] },
+    { name: 'Sites', icon: <RiBuildingLine />, segment: 'site', path: '/site',roles: ['admin', 'sitemanager']  },
+    
+    
     { 
       name: 'User',
       icon: <RiUserLine />,
       segment: 'user', 
-      path: '/user'
+      path: '/user',
+      roles: ['admin','sitemanager'] // Only show for admin role
     },
-    { name: 'Supplier', icon: <RiContactsLine />, segment: 'supplier', path: '/supplier' },
-    { name: 'Unittype', icon: <RiRulerLine />, segment: 'unittype', path: '/unittype' },
-    { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/material' },
+  
+   
+
+    { name: 'Supplier', icon: <RiContactsLine />, segment: 'supplier', path: '/supplier', roles: ['admin'] },
+
+    { name: 'Unittype', icon: <RiRulerLine />, segment: 'unittype', path: '/unittype' , roles: ['admin']},
+
+    { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/material' , roles: ['admin']},
+
+    { name: 'Material Requests', icon: <RiSendPlaneLine    />, segment: 'request', path: '/request' , roles: ['admin', 'sitemanager', 'siteengineer'] },
+
+    { name: 'Material Consumption', icon: <RiScissorsCutLine    />, segment: 'consumption', path: '/consumption' , roles: ['admin', 'sitemanager', 'siteengineer'] },
+    { name: 'Push Notification', icon: <RiMegaphoneLine  />, segment: 'supplier', path: '/supplier', roles: ['admin','sitemanager'] },
     // { 
     //   name: 'Reports', 
     //   icon: <RiBarChartLine />,
@@ -50,7 +80,10 @@ const Layout = () => {
     // },
     // { name: 'Orders', icon: <RiShoppingCartLine />, segment: 'orders', path: '/orders' },
   ];
-
+  const filteredNavigation = navigation.filter((item) => {
+    if (!item.roles) return true; // Show items without roles to everyone
+    return item.roles.some((role) => hasRole(role)); // Check user's roles
+  });
   useEffect(() => {
     const checkMobile = () => {
       const isMobile = window.innerWidth < 768;
@@ -63,11 +96,14 @@ const Layout = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+ 
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.theme = isDark ? 'dark' : 'light';
   }, [isDark]);
 
+  
   return (
     <div className="min-h-screen bg-lightBackground text-gray-900 dark:bg-darkBackground dark:text-gray-100 transition-colors duration-200">
       {/* Single Navbar component with all props */}
@@ -129,12 +165,12 @@ const Layout = () => {
 
       {/* Single Sidebar component with all props */}
       <Sidebar
+      navigation={filteredNavigation} 
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         isMobile={isMobile}
         activeNav={activeNav}
         setActiveNav={setActiveNav}
-        navigation={navigation}
         className="border-r border-lightPrimary/10 dark:border-darkPrimary/20"
       />
 
@@ -148,7 +184,7 @@ const Layout = () => {
                           border-t-lightPrimary dark:border-t-darkPrimary rounded-full animate-spin" />
         </div>
       )}
-      <div class="px-0.4 md:px-6 pt-1 pb-6 max-w-7xl mx-auto">
+      <div className="px-0.4 md:px-6 pt-1 pb-6 max-w-7xl mx-auto">
         <Outlet context={{ isLoading, setIsLoading }} />
       </div>
     </main>

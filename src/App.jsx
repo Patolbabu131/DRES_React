@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from './components/context/ThemeContext';
+import { AuthProvider } from './components/context/AuthContext';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import Layout from './components/includes/Layout';
@@ -8,16 +9,27 @@ import Login from './components/AuthComponent/Login';
 import Site from './components/SiteComponent/ListSite';
 import User from './components/UserComponent/ListUser';
 import Supplier from './components/SupplierComponent/ListSupplier';
-import ProtectedRoute from './components/context/ProtectedRoute'; 
+import ProtectedRoute from './components/context/ProtectedRoute';
 import Unittype from './components/UnitsComponent/ListUnits';
 import Material from './components/MaterialComponent/ListMaterials';
 import MaterialTransferForm from './components/TransactionComponent/MaterialTransferForm';
+import Unauthorized from './components/AuthComponent/Unauthorized';
 
+// Define route access by role
+const ROLES = {
+  ADMIN: 'admin',
+  SITE_MANAGER: 'sitemanager',
+  SITE_ENGINEER: 'siteengineer'
+};
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Login />,
+  },
+  {
+    path: "/unauthorized",
+    element: <Unauthorized />,
   },
   {
     element: (
@@ -26,15 +38,60 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: "/dashboard", element: <Dashboard /> },
-      { path: "/site", element: <Site /> },
-      { path: "/user", element: <User /> },
-      {path:"/supplier", element: <Supplier />},
-      {path:"/unittype", element: <Unittype />},
-      {path:"/material", element:<Material/>},
-      {path:"/materialtransfer", element:<MaterialTransferForm/>},
+      { 
+        path: "/dashboard", 
+        element: <Dashboard /> 
+      },
+      { 
+        path: "/site", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER]}>
+            <Site />
+          </ProtectedRoute>
+        ) 
+      },
+      { 
+        path: "/user", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER]}>
+            <User />
+          </ProtectedRoute>
+        ) 
+      },
+      { 
+        path: "/supplier", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <Supplier />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/unittype", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER, ROLES.SITE_ENGINEER]}>
+            <Unittype />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/material", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER, ROLES.SITE_ENGINEER]}>
+            <Material />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/materialtransfer", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.SITE_MANAGER]}>
+            <MaterialTransferForm />
+          </ProtectedRoute>
+        )
+      },
     ]
-  } 
+  }
 ]);
 
 function App() {
@@ -42,7 +99,9 @@ function App() {
 
   return (
     <ThemeProvider>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

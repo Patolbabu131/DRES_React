@@ -8,7 +8,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, activeNav, setActiveNa
         isCollapsed ? 'w-16' : 'w-48'
       } ${isMobile ? (isCollapsed ? '-translate-x-full' : 'translate-x-0') : ''}`}
     >
-      <div className="h-full overflow-y-auto py-4">
+      <div className="h-full overflow-y-auto py-1">
         <nav className="flex flex-col gap-1">
           {navigation.map((item) => (
             <div key={item.segment} className="relative group">

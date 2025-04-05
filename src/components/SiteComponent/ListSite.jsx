@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import AddSiteModal from './AddSiteModal';
 import toast, { Toaster } from 'react-hot-toast';
 import EditSiteModal from './EditSiteModal';
+import RoleBasedContent from '../context/RoleBasedContent';
 
 const ListSite = () => {
   const [sites, setSites] = useState([]);
@@ -219,6 +220,7 @@ const ListSite = () => {
         onChange={(e) => setSearchQuery(e.target.value)}
         disabled={isLoading}
       />
+        <RoleBasedContent allowedRoles={['admin']}>
       <button 
         className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:py-1.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={() => setIsModalOpen(true)}
@@ -226,6 +228,7 @@ const ListSite = () => {
       >
         Add Site
       </button>
+      </RoleBasedContent>
     </div>
 
     </div>

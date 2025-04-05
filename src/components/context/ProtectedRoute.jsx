@@ -1,11 +1,42 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { jwtDecode } from "jwt-decode";
 
 const SESSION_TIMEOUT = 45 * 60 * 1000; // 45 minutes
 const WARNING_TIME = 9000; // 9 seconds before expiry
 
-const ProtectedRoute = ({ children }) => {
+// Helper function to check user roles
+const getUserRoles = () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    
+    const decoded = jwtDecode(token);
+    const rolesClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+    const roles = decoded[rolesClaim];
+    
+    // Handle single role string or array
+    return Array.isArray(roles) ? roles : (roles ? [roles] : []);
+  } catch (error) {
+    console.error('Error getting user roles:', error);
+    return [];
+  }
+};
+
+const hasRequiredRole = (requiredRoles) => {
+  // If no roles specified, allow access
+  if (!requiredRoles || requiredRoles.length === 0) {
+    return true;
+  }
+  
+  const userRoles = getUserRoles();
+  
+  // Check if user has any of the required roles
+  return requiredRoles.some(role => userRoles.includes(role));
+};
+
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const timerRef = useRef(null);
@@ -109,8 +140,14 @@ const ProtectedRoute = ({ children }) => {
     };
   }, [token, resetTimer, showWarning]);
 
+  // Check if user is authenticated
   if (!token) {
     return <Navigate to="/" replace />;
+  }
+
+  // Check if user has the required role
+  if (!hasRequiredRole(allowedRoles)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return (
