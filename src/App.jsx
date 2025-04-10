@@ -17,6 +17,7 @@ import Unauthorized from './components/AuthComponent/Unauthorized';
 import ListRequest from './components/RequestComponent/ListRequest';
 import AddMaterialRequest from './components/RequestComponent/AddMaterialRequest';
 import TransactionHistoryDashboard from './components/TransactionComponent/TransactionHistoryDashboard';
+import ListStock from './components/StockComponent/ListStock';
 
 // Define route access by role
 const ROLES = {
@@ -44,7 +45,7 @@ const router = createBrowserRouter([
       { 
         path: "/dashboard", 
         element: (
-          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_ENGINEER]}>
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_ENGINEER, ROLES.SITE_MANAGER]}>
             <TransactionHistoryDashboard  />
           </ProtectedRoute>
         )
@@ -111,6 +112,13 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={[ROLES.SITE_ENGINEER]}>
             <AddMaterialRequest />
+          </ProtectedRoute>
+        )
+      },{ 
+        path: "/stock", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER, ROLES.SITE_ENGINEER]}>
+            <ListStock />
           </ProtectedRoute>
         )
       },

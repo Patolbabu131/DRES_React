@@ -143,7 +143,7 @@ const MaterialTransactionForm = () => {
       };
 
       try {
-        const response = await TransactionService.createTransaction(payload);
+        const response = await TransactionService.createSiteTransaction(payload);
         console.log('API Response:', response.data);
         alert('Transaction submitted successfully!');
   
