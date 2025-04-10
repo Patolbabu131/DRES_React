@@ -64,10 +64,10 @@ const Layout = () => {
 
     { name: 'Materials', icon: <RiArchiveLine />, segment: 'materials', path: '/material' , roles: ['admin']},
 
-    { name: 'Material Requests', icon: <RiSendPlaneLine    />, segment: 'request', path: '/request' , roles: ['admin', 'sitemanager', 'siteengineer'] },
+    { name: 'Material Requests', icon: <RiSendPlaneLine    />, segment: 'request', path: '/listrequest' , roles: ['admin', 'sitemanager', 'siteengineer'] },
 
     { name: 'Material Consumption', icon: <RiScissorsCutLine    />, segment: 'consumption', path: '/consumption' , roles: ['admin', 'sitemanager', 'siteengineer'] },
-    { name: 'Push Notification', icon: <RiMegaphoneLine  />, segment: 'supplier', path: '/supplier', roles: ['admin','sitemanager'] },
+    { name: 'Push Notification', icon: <RiMegaphoneLine  />, segment: 'Notification', path: '/Notification', roles: ['admin','sitemanager'] },
     // { 
     //   name: 'Reports', 
     //   icon: <RiBarChartLine />,

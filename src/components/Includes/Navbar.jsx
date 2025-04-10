@@ -10,28 +10,26 @@ import {
   FiEdit
 } from 'react-icons/fi';
 import { TbLayoutSidebarLeftCollapse } from 'react-icons/tb';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { AuthService } from '../../services/AuthService';
 
 const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
+  const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const [userData, setUserData] = useState({ 
     name: null, 
     role: null 
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [notifications] = useState(3); // Removed setNotifications since it's not used
+  const [notifications] = useState(3);
   const dropdownRef = useRef(null);
 
   const formatRole = (role) => {
-    // Handle array roles
     if (Array.isArray(role)) {
       role = role.length > 0 ? role[0] : 'User';
     }
-    
-    // Handle null/undefined/empty
     if (!role) return 'User';
-    
     const roleString = String(role).trim().toLowerCase();
     
     switch(roleString) {
@@ -47,12 +45,9 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
     const fetchUserData = () => {
       const name = AuthService.getUsername();
       const roles = AuthService.getUserRoles();
-      
-      // Handle role array with fallback
       const primaryRole = Array.isArray(roles) && roles.length > 0 
         ? roles[0] 
         : 'User';
-      
       setUserData({ name, role: primaryRole });
     };
     fetchUserData();
@@ -82,6 +77,10 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
     return initials.length === 1 ? initials + initials : initials;
   };
 
+  const handleDashboardRedirect = () => {
+    navigate('/dashboard');
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-darkSurface border-b border-lightPrimary/20 dark:border-darkPrimary/20 z-40 shadow-sm">
       <div className="flex items-center justify-between h-full px-4">
@@ -97,7 +96,10 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
               <TbLayoutSidebarLeftCollapse className="w-6 h-6" />
             )}
           </button>
-          <h1 className="text-xl font-semibold text-lightPrimary dark:text-darkPrimary">
+          <h1 
+            onClick={handleDashboardRedirect} 
+            className="text-xl font-semibold text-lightPrimary dark:text-darkPrimary cursor-pointer"
+          >
             DRE StockLogic
           </h1>
         </div>

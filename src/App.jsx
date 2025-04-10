@@ -14,6 +14,9 @@ import Unittype from './components/UnitsComponent/ListUnits';
 import Material from './components/MaterialComponent/ListMaterials';
 import MaterialTransferForm from './components/TransactionComponent/MaterialTransferForm';
 import Unauthorized from './components/AuthComponent/Unauthorized';
+import ListRequest from './components/RequestComponent/ListRequest';
+import AddMaterialRequest from './components/RequestComponent/AddMaterialRequest';
+import TransactionHistoryDashboard from './components/TransactionComponent/TransactionHistoryDashboard';
 
 // Define route access by role
 const ROLES = {
@@ -40,7 +43,11 @@ const router = createBrowserRouter([
     children: [
       { 
         path: "/dashboard", 
-        element: <Dashboard /> 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_ENGINEER]}>
+            <TransactionHistoryDashboard  />
+          </ProtectedRoute>
+        )
       },
       { 
         path: "/site", 
@@ -85,8 +92,25 @@ const router = createBrowserRouter([
       { 
         path: "/materialtransfer", 
         element: (
-          <ProtectedRoute allowedRoles={[ROLES.SITE_MANAGER]}>
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_ENGINEER]}>
             <MaterialTransferForm />
+          </ProtectedRoute>
+        )
+      },
+      
+      { 
+        path: "/listrequest", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER, ROLES.SITE_ENGINEER]}>
+            <ListRequest />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/AddMaterialRequest", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.SITE_ENGINEER]}>
+            <AddMaterialRequest />
           </ProtectedRoute>
         )
       },

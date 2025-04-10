@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import ApiClient from '../../services/apiClient';
+import ApiClient from '../../services/ApiClient';
 import { useOutletContext } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import AddSiteModal from './AddSiteModal';

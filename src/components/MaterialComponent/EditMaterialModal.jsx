@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import ApiClient from '../../services/apiClient';
+import ApiClient from '../../services/ApiClient';
 import { useTheme } from '../context/ThemeContext';
 import { AuthService } from '../../services/AuthService';
 import { toast } from 'react-hot-toast';
