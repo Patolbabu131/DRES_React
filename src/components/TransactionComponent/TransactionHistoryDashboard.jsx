@@ -144,14 +144,20 @@ const TransactionHistoryDashboard = () => {
   };
 
   const filteredTransactions = transactions.filter(txn => {
+    const invoiceNo = txn.invoiceNo ? txn.invoiceNo.toLowerCase() : "";
+    const supplier = txn.supplier ? txn.supplier.toLowerCase() : "";
+    const site = txn.site ? txn.site.toLowerCase() : "";
+    const search = searchTerm.toLowerCase();
+  
     const matchesSearch = 
-      txn.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      txn.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      txn.site.toLowerCase().includes(searchTerm.toLowerCase());
-    
+        invoiceNo.includes(search) ||
+        supplier.includes(search) ||
+        site.includes(search);
+  
     if (filter === 'all') return matchesSearch;
     return matchesSearch && txn.status === filter;
   });
+  
 
   const getStatusBadgeClass = (status) => {
     switch(status) {

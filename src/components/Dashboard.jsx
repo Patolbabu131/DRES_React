@@ -18,12 +18,7 @@ const Dashboard = () => {
           <p className="text-gray-700 dark:text-gray-300 mb-4">
             Start managing your business operations from this centralized dashboard.
           </p>
-          <button
-            onClick={handleRedirect}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none"
-          >
-            Go to Material Transfer
-          </button>
+          
         </div>
       </div>
     </div>

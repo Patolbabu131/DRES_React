@@ -1,10 +1,10 @@
 import axios from 'axios';
 import AuthService from './AuthService';
 
-class TransactionService {
+class ConsumptionService {
   constructor() {
     this.axiosInstance = axios.create({
-      baseURL: 'https://localhost:7022/api/Transaction',
+      baseURL: 'https://localhost:7022/api/Consumption',
     });
 
     // Request interceptor for auth headers
@@ -18,26 +18,20 @@ class TransactionService {
   }
 
   // Create a new transaction
-  async createSiteTransaction(data) {
-    return this.axiosInstance.post('/CreateSiteTransaction', data, {
+  async addConsumption(data) {
+    return this.axiosInstance.post('/AddConsumption', data, {
       headers: {
         'Content-Type': 'application/json',
       }
     });
   }
   
-  async issueMaterialTransaction(data) {
-    return this.axiosInstance.post('/IssueMaterialTransaction', data, {
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-  }
+
 
   // Get all transactions
-  async getAllTransactions() {
-    return this.axiosInstance.get('/GetAllTransactions');
+  async getConsumption(userId) {
+    return this.axiosInstance.get(`/GetConsumption/${userId}`);
   }
 }
 
-export default new TransactionService();
+export default new ConsumptionService();

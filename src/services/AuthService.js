@@ -101,7 +101,7 @@ export const AuthService = {
       return null;
     }
   },
-
+ 
   getUsername: () => {
     try {
       const token = localStorage.getItem('token');
@@ -122,7 +122,28 @@ export const AuthService = {
       return null;
     }
   },
-  
+  getSiteId: () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      
+      const decoded = jwtDecode(token);
+      const siteIdClaim = 'site_id'; // Direct claim name from your JWT
+      
+      // Check common claim variations as fallbacks
+      return (
+        decoded[siteIdClaim] ||
+        decoded.siteId ||         // camelCase variation
+        decoded.site_id ||       // snake_case variation
+        decoded.site ||          // shorter variation
+        null
+      );
+    } catch (error) {
+      console.error('Error getting site ID:', error);
+      return null;
+    }
+  },
+
   refreshToken: async () => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
