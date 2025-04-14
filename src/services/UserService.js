@@ -18,9 +18,11 @@ class UserService {
     });
   }
 
-  async getAllUsers() {
-    return this.axiosInstance.get('/GetAllUsers');
+  
+  async getUserList(userId) {
+    return this.axiosInstance.get(`/GetUserList/${userId}`);
   }
+
 
   async addUser(UserData) {
     return this.axiosInstance.post('/CreateUser', UserData, {

@@ -6,6 +6,7 @@ import AddSiteModal from './AddSiteModal';
 import toast, { Toaster } from 'react-hot-toast';
 import EditSiteModal from './EditSiteModal';
 import RoleBasedContent from '../context/RoleBasedContent';
+import AuthService from '../../services/AuthService';
 
 const ListSite = () => {
   const [sites, setSites] = useState([]);
@@ -29,7 +30,7 @@ const ListSite = () => {
       effectRan.current = true;
       setIsLoading(true);
       try {
-        const response = await ApiClient.getAllSites();
+        const response = await ApiClient.getSitesList(AuthService.getUserId())
         setSites(response.data.data);
       } catch (error) {
         toast.error("Server not responding");
@@ -171,7 +172,7 @@ const ListSite = () => {
   };
 
   // Table headers
-  const tableHeaders = ['id', 'sitename', 'location', 'status', 'description', 'actions'];
+  const tableHeaders = ['id', 'sitename', 'location', 'status', 'description',  <RoleBasedContent allowedRoles={['admin']}>actions</RoleBasedContent>];
 
   return (
     <div className="container mx-auto px-5 sm:px-4 max-w-7xl min-h-screen relative">
@@ -279,6 +280,7 @@ const ListSite = () => {
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {site.description ? site.description : '-'}
                     </td>
+                    <RoleBasedContent allowedRoles={['admin']}>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       <div className="flex items-center gap-3">
                         <button 
@@ -307,6 +309,7 @@ const ListSite = () => {
                         </button>
                       </div>
                     </td>
+                    </RoleBasedContent>
                   </tr>
                 ))
               ) : (

@@ -1,15 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import UserService from '../../services/UserService';
 import AddUserModal from './AddUserModel';
-//  import EditUserModal from './EditUserModal';
+// import EditUserModal from './EditUserModal';
+import AuthService from '../../services/AuthService';
+import autoprefixer from 'autoprefixer';
+import RoleBasedContent from '../context/RoleBasedContent';
 
 const ListUser = () => {
   const [users, setUsers] = useState([]);
   const { setIsLoading, isLoading } = useOutletContext();
   const [searchQuery, setSearchQuery] = useState('');
+  // New filter state: selectedSite and selectedRole (default "all")
+  const [selectedSite, setSelectedSite] = useState('all');
+  const [selectedRole, setSelectedRole] = useState('all');
+  const userId = AuthService.getUserId();
   const [selectedUser, setSelectedUser] = useState(null);
   const { isDark } = useTheme();
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -38,7 +45,7 @@ const ListUser = () => {
       effectRan.current = true;
       setIsLoading(true);
       try {
-        const response = await UserService.getAllUsers();
+        const response = await UserService.getUserList(userId);
         setUsers(response.data.data);
       } catch (error) {
         toast.error("Server Not Responding");
@@ -71,7 +78,6 @@ const ListUser = () => {
     // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
 
   // Update handleSort to use headerToKeyMap
   const handleSort = (header) => {
@@ -89,12 +95,20 @@ const ListUser = () => {
     setIsEditModalOpen(true);
   };
 
-  // Filter users based on search query
+  // Get unique site names for the dropdown options
+  const uniqueSites = Array.from(new Set(users.map(user => user.siteName).filter(Boolean)));
+
+  // Filter users based on search query, site dropdown and role dropdown
   const filteredUsers = users.filter(user => {
     const query = searchQuery.toLowerCase();
-    return Object.values(user).some(value =>
+    const matchesSearch = Object.values(user).some(value =>
       value.toString().toLowerCase().includes(query)
     );
+
+    const matchesSite = selectedSite === 'all' || user.siteName === selectedSite;
+    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
+
+    return matchesSearch && matchesSite && matchesRole;
   });
 
   // Sort filtered users
@@ -185,7 +199,36 @@ const ListUser = () => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full sm:w-auto">
+        {/* Controls for search and filter dropdowns */}
+      
+          {/* Dropdown for Site Filter */}
+          <RoleBasedContent allowedRoles={['admin']}>
+          <select
+              className="p-2 sm:p-1.5 border rounded-lg bg-white dark:bg-darkSurface text-gray-900 dark:text-gray-100 border-gray-300 dark:border-darkPrimary/20 text-sm transition-colors"
+              value={selectedSite}
+              onChange={(e) => setSelectedSite(e.target.value)}
+              disabled={isLoading}
+              >
+              <option value="all">All Sites</option>
+              {uniqueSites.map((site, index) => (
+                <option key={index} value={site}>
+                  {site}
+                </option>
+              ))}
+          </select>
+          {/* Dropdown for Role Filter */}
+          <select
+            className="p-2 sm:p-1.5 border rounded-lg bg-white dark:bg-darkSurface text-gray-900 dark:text-gray-100 border-gray-300 dark:border-darkPrimary/20 text-sm transition-colors"
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            disabled={isLoading}
+          >
+            <option value="all">All Roles</option>
+            <option value="sitemanager">Site Manager</option>
+            <option value="siteengineer">Site Engineer</option>
+          </select>
+          </RoleBasedContent>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search Users..."
@@ -194,6 +237,19 @@ const ListUser = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             disabled={isLoading}
           />
+           <RoleBasedContent allowedRoles={['admin']}>
+           <button 
+            className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 sm:py-1.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => {
+              setSelectedSite('all');
+              setSelectedRole('all');
+              setSearchQuery('');
+            }}
+            disabled={isLoading}
+          >
+            Reset
+          </button>
+          </RoleBasedContent>
           <button 
             className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:py-1.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => setIsModalOpen(true)}
@@ -201,6 +257,7 @@ const ListUser = () => {
           >
             Add User
           </button>
+         
         </div>
       </div>
 

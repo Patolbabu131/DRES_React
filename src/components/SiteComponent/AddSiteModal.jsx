@@ -152,7 +152,7 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Sitename */}
             <div className="sm:col-span-1">
               <label className="block text-sm font-medium mb-2">
-                Sitename <span className="text-red-500">*</span>
+                Site Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -172,7 +172,7 @@ const AddSiteModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Siteaddress */}
             <div className="sm:col-span-1">
               <label className="block text-sm font-medium mb-2">
-                Siteaddress <span className="text-red-500">*</span>
+                Site Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

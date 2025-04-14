@@ -21,7 +21,9 @@ class ApiClient {
   async getAllSites() {
     return this.axiosInstance.get('/Sites/GetAllSites');
   }
-
+  async getSitesList(userId) {
+    return this.axiosInstance.get(`/Sites/GetSitesList/${userId}`);
+  }
   async createSite(siteData) {
     return this.axiosInstance.post('/Sites/CreateSite', siteData, {
       headers: {

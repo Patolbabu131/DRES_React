@@ -42,6 +42,7 @@ const Layout = () => {
   const hasRole = (role) => roles.includes(role); // Function to check if the user has a specific role
 
   const navigation = [
+    { name: 'Dashboard', icon: <RiDashboardLine />, segment: 'dashboard', path: '/dashboard', roles: ['admin', 'sitemanager', 'siteengineer']  },
     { name: 'Stock', icon: <RiStackFill />, segment: 'stock', path: '/stock', roles: ['admin', 'sitemanager', 'siteengineer'] },
     { name: 'Sites', icon: <RiBuildingLine />, segment: 'site', path: '/site', roles: ['admin', 'sitemanager'] },
     { name: 'User', icon: <RiUserLine />, segment: 'user', path: '/user', roles: ['admin', 'sitemanager'] },

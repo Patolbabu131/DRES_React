@@ -18,8 +18,8 @@ class RequestService {
     });
   }
 
-  async getRequests(userId) {
-    return this.axiosInstance.get(`/GetRequests/${userId}`);
+  async getRequestsList(userId) {
+    return this.axiosInstance.get(`/GetRequestsList/${userId}`);
   }
   
 

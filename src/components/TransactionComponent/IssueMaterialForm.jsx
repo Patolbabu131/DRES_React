@@ -1,50 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-// Service imports (update paths as needed)
 import TransactionService from '../../services/TransactionService';
 import AuthService from '../../services/AuthService';
 import UserService from '../../services/UserService';
-import RequestService from '../../services/RequestService'; // assumed service for requests
+import RequestService from '../../services/RequestService';
 import MaterialService from '../../services/MaterialService';
 import UnitService from '../../services/UnitService';
 
-
 const IssueMaterialForm = () => {
-  // Get site id and user id from AuthService
   const siteId = AuthService.getSiteId();
   const createdby = AuthService.getUserId();
+  const userId = AuthService.getUserId();
+  const navigate = useNavigate();
 
-  // Form state for the top-level fields
   const [formData, setFormData] = useState({
     request_id: '',
     remark: '',
     to_user_id: ''
   });
 
-  // Arrays for dropdowns/populated data
   const [requests, setRequests] = useState([]);
   const [users, setUsers] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [units, setUnits] = useState([]);
 
-  // Items state: array of objects { material_id, unit_type_id, quantity }
+  // Each item now includes a currentStock property.
   const [items, setItems] = useState([
-    { id: Date.now(), material_id: '', unit_type_id: '', quantity: 1 }
+    { id: Date.now(), material_id: '', unit_type_id: '', quantity: 0, currentStock: 0 }
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
 
   // Fetch dropdown data when component mounts
   useEffect(() => {
-
-
     const fetchData = async () => {
       try {
         const [reqRes, usersRes, materialsRes, unitsRes] = await Promise.all([
-          RequestService.getRequests("27"),
-          UserService.getAllUsers(),
+          RequestService.getRequestsList(userId),
+          UserService.getUserList(userId),
           MaterialService.getAllMaterials(),
           UnitService.getAllUnits()
         ]);
@@ -57,13 +50,13 @@ const IssueMaterialForm = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [userId]);
 
   // Add new item row
   const addItemRow = () => {
     setItems(prev => [
       ...prev,
-      { id: Date.now(), material_id: '', unit_type_id: '', quantity: 1 }
+      { id: Date.now(), material_id: '', unit_type_id: '', quantity: 0, currentStock: 0 }
     ]);
   };
 
@@ -74,16 +67,95 @@ const IssueMaterialForm = () => {
     }
   };
 
-  // Handle change in any item row field
+  // Helper function to check for duplicate material-unit combinations.
+  const hasDuplicateMaterialUnit = () => {
+    const seen = new Set();
+    for (const item of items) {
+      // Only consider if both material and unit are selected.
+      if (item.material_id && item.unit_type_id) {
+        const key = `${item.material_id}_${item.unit_type_id}`;
+        if (seen.has(key)) {
+          return true;
+        }
+        seen.add(key);
+      }
+    }
+    return false;
+  };
+
+  // Handle changes for each item field.
+  // On material or unit change, reset quantity and currentStock and fetch new stock.
+  // For quantity change, cap it to currentStock.
   const handleItemChange = (id, field, value) => {
     setItems(prev =>
-      prev.map(item => item.id === id ? { ...item, [field]: value } : item)
+      prev.map(item => {
+        if (item.id === id) {
+          const updatedItem = { ...item };
+
+          if (field === 'material_id' || field === 'unit_type_id') {
+            updatedItem[field] = value;
+            // Reset the quantity and currentStock until fetch completes.
+            updatedItem.quantity = 0;
+            updatedItem.currentStock = 0;
+
+            // If both material and unit are selected, fetch current stock.
+            const selectedMaterial = field === 'material_id' ? value : updatedItem.material_id;
+            const selectedUnit = field === 'unit_type_id' ? value : updatedItem.unit_type_id;
+
+            if (selectedMaterial && selectedUnit) {
+              TransactionService.getSiteStock(siteId, selectedMaterial, selectedUnit)
+                .then(response => {
+                  const stock = response.data; // Expected to be a number.
+                  // Set initial quantity to 1 if there's stock, otherwise remains 0.
+                  const initialQuantity = stock > 0 ? 1 : 0;
+                  setItems(prevItems =>
+                    prevItems.map(i =>
+                      i.id === id
+                        ? { ...i, currentStock: stock, quantity: initialQuantity }
+                        : i
+                    )
+                  );
+                })
+                .catch(err => {
+                  console.error("Error fetching stock:", err);
+                });
+            }
+          } else if (field === 'quantity') {
+            const numericValue = parseInt(value, 10);
+            // Cap quantity to currentStock even if currentStock is 0.
+            if (numericValue > updatedItem.currentStock) {
+              updatedItem.quantity = updatedItem.currentStock;
+            } else {
+              updatedItem.quantity = numericValue;
+            }
+          } else {
+            updatedItem[field] = value;
+          }
+          return updatedItem;
+        }
+        return item;
+      })
     );
   };
 
-  // Handle form submission
+  // Handle form submission.
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate that each item has a quantity greater than 0.
+    if (items.some(item => item.quantity <= 0)) {
+      alert('Quantity must be greater than 0 for all items.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check for duplicate material and unit combination.
+    if (hasDuplicateMaterialUnit()) {
+      alert('Each item must have a unique combination of material and unit.');
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = {
@@ -101,17 +173,12 @@ const IssueMaterialForm = () => {
     };
 
     try {
-      // Call the transaction service to issue the material
       const response = await TransactionService.issueMaterialTransaction(payload);
       console.log('Transaction successful:', response.data);
       alert('Material issued successfully!');
       // Optionally reset form and/or redirect
-      setFormData({
-        request_id: '',
-        remark: '',
-        to_user_id: ''
-      });
-      setItems([{ id: Date.now(), material_id: '', unit_type_id: '', quantity: 1 }]);
+      setFormData({ request_id: '', remark: '', to_user_id: '' });
+      setItems([{ id: Date.now(), material_id: '', unit_type_id: '', quantity: 0, currentStock: 0 }]);
       navigate('/dashboard');
     } catch (error) {
       console.error('Error issuing material:', error);
@@ -178,7 +245,7 @@ const IssueMaterialForm = () => {
         <div className="border-t pt-4">
           <h2 className="text-xl font-semibold mb-2">Items</h2>
           {items.map(item => (
-            <div key={item.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 items-end">
+            <div key={item.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2 items-end">
               {/* Material Dropdown */}
               <div>
                 <label className="block mb-1">Material *</label>
@@ -218,15 +285,25 @@ const IssueMaterialForm = () => {
                 <label className="block mb-1">Quantity *</label>
                 <input
                   type="number"
+                  min="0"
                   className="w-full border p-2 rounded"
                   value={item.quantity}
                   onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
-                  min="1"
                   required
                 />
               </div>
-              {/* Remove Item Button */}
-              <div className="md:col-span-3 text-right">
+              {/* Current Stock Display */}
+              <div>
+                <label className="block mb-1">Current Stock</label>
+                <input
+                  type="number"
+                  className="w-full border p-2 rounded bg-gray-100"
+                  value={item.currentStock}
+                  readOnly
+                />
+              </div>
+              {/* Remove Button */}
+              <div className="md:col-span-4 text-right">
                 <button
                   type="button"
                   onClick={() => removeItemRow(item.id)}

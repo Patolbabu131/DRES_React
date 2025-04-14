@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import ConsumptionService from '../../services/ConsumptionService'; // Adjust the path as needed
 import AuthService from '../../services/AuthService'; // Adjust the path as needed
 import { useNavigate } from 'react-router-dom';
+import RoleBasedContent from '../context/RoleBasedContent';
 
 const ListConsumption = () => {
   const [consumptionData, setConsumptionData] = useState([]);
@@ -46,6 +47,7 @@ const ListConsumption = () => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Material Consumption Records</h1>
+        <RoleBasedContent allowedRoles={['siteengineer']}>
         <button
             type="button"
             onClick={() => navigate('/consumptionform')}
@@ -56,6 +58,7 @@ const ListConsumption = () => {
             </svg>
             Add Consumption
         </button>
+        </RoleBasedContent>
         </div>
       {consumptionData && consumptionData.length > 0 ? (
         consumptionData.map((record) => (

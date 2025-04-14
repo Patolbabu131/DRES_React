@@ -182,7 +182,7 @@ const EditSiteModal = ({ isOpen, onClose, onSuccess, onError, site }) => {
             {/* Sitename */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Sitename <span className="text-red-500">*</span>
+                Site Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -202,7 +202,7 @@ const EditSiteModal = ({ isOpen, onClose, onSuccess, onError, site }) => {
             {/* Siteaddress */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Siteaddress <span className="text-red-500">*</span>
+                Site Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

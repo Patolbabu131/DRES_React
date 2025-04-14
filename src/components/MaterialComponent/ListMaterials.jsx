@@ -3,7 +3,7 @@ import MaterialService from '../../services/MaterialService';
 import { useOutletContext } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import AddMaterialModal from './AddMaterialModal';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import EditMaterialModal from './EditMaterialModal';
 
 const ListMaterials = () => {
@@ -67,8 +67,7 @@ const ListMaterials = () => {
     const confirmed = await new Promise((resolve) => {
       const customToastId = toast.custom(
         (t) => (
-          <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} 
-            max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black/10 dark:ring-white/10 p-4`}>
+          <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black/10 dark:ring-white/10 p-4`}>
             <div className="flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 Delete Material Confirmation
@@ -191,40 +190,50 @@ const ListMaterials = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-darkSurface divide-y divide-gray-200 dark:divide-darkPrimary/20">
-              {currentItems.map((material) => (
-                <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-darkPrimary/10">
-                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{material.id}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{material.material_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                    {material.remark || '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => {
-                          setEditingMaterial(material);
-                          setIsEditModalOpen(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                        aria-label="Edit"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {currentItems.length > 0 ? (
+                currentItems.map((material) => (
+                  <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-darkPrimary/10">
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{material.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{material.material_name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                      {material.remark || '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingMaterial(material);
+                            setIsEditModalOpen(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          aria-label="Edit"
+                        >
+                          {/* Edit icon SVG */}
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMaterial(material.id)}
-                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMaterial(material.id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                           aria-label="Delete"
-                      >
-                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        >
+                          {/* Delete icon SVG */}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M9 3v1H4v2h16V4h-5V3H9zm-4 6v10a2 2 0 002 2h10a2 2 0 002-2V9H5zm4 3h2v6H9v-6zm4 0h2v6h-2v-6z"/>
                           </svg>
-                      </button>
-                    </div>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={tableHeaders.length} className="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No materials found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -232,42 +241,50 @@ const ListMaterials = () => {
 
       {/* Card View */}
       {viewMode === 'cards' && (
-        <div className="grid grid-cols-1 gap-4">
-          {currentItems.map((material) => (
-            <div key={material.id} className="rounded-lg border p-4 bg-white dark:bg-darkSurface border-gray-200 dark:border-darkPrimary/20">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-medium text-gray-900 dark:text-gray-100">{material.material_name}</h3>
-                <span className="text-sm text-gray-500 dark:text-gray-400">ID: {material.id}</span>
+        currentItems.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {currentItems.map((material) => (
+              <div key={material.id} className="rounded-lg border p-4 bg-white dark:bg-darkSurface border-gray-200 dark:border-darkPrimary/20">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{material.material_name}</h3>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">ID: {material.id}</span>
+                </div>
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  <p>Remark: {material.remark || '-'}</p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-gray-100 dark:border-darkPrimary/10 flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingMaterial(material);
+                      setIsEditModalOpen(true);
+                    }}
+                    className="text-blue-600 dark:text-blue-400"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMaterial(material.id)}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                <p>Remark: {material.remark || '-'}</p>
-              </div>
-              <div className="mt-3 pt-2 border-t border-gray-100 dark:border-darkPrimary/10 flex justify-end gap-2">
-                <button
-                  onClick={() => {
-                    setEditingMaterial(material);
-                    setIsEditModalOpen(true);
-                  }}
-                  className="text-blue-600 dark:text-blue-400"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteMaterial(material.id)}
-                  className="text-red-600 dark:text-red-400"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+            No materials found
+          </div>
+        )
       )}
 
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3">
         <div className="text-xs text-gray-600 dark:text-gray-400">
-          Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sortedMaterials.length)} of {sortedMaterials.length} entries
+          {sortedMaterials.length > 0
+            ? `Showing ${indexOfFirstItem + 1} to ${Math.min(indexOfLastItem, sortedMaterials.length)} of ${sortedMaterials.length} entries`
+            : 'No entries to show'}
         </div>
         <div className="flex gap-2">
           <button
@@ -277,7 +294,7 @@ const ListMaterials = () => {
             Previous
           </button>
           <span className="px-3 py-1.5 text-xs">
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalPages || 1}
           </span>
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -289,22 +306,22 @@ const ListMaterials = () => {
       </div>
 
       {/* Modals */}
-     <EditMaterialModal
+      <EditMaterialModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         material={editingMaterial}
         onSuccess={(updated) => {
           setMaterials(prev => prev.map(m => m.id === updated.id ? updated : m));
         }}
-      /> 
+      />
       
-       <AddMaterialModal
+      <AddMaterialModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={(newMaterial) => {
           setMaterials(prev => [newMaterial, ...prev]);
         }}
-      /> 
+      />
     </div>
   );
 };

@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import MaterialService from '../../services/MaterialService';
 import UnitService from '../../services/UnitService';
-import ApiClient from '../../services/ApiClient';
 import RequestService from '../../services/RequestService';
 import AuthService from '../../services/AuthService';
 
 const AddMaterialRequest = () => {
   const [materials, setMaterials] = useState([]);
   const [units, setUnits] = useState([]);
-  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
-    site_id: '',
     remark: '',
     items: [{
       id: Date.now(),
@@ -28,15 +25,13 @@ const AddMaterialRequest = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [materialsRes, unitsRes, sitesRes] = await Promise.all([
+        const [materialsRes, unitsRes] = await Promise.all([
           MaterialService.getAllMaterials(),
-          UnitService.getAllUnits(),
-          ApiClient.getAllSites()
+          UnitService.getAllUnits()
         ]);
         
         setMaterials(materialsRes.data.data);
         setUnits(unitsRes.data.data);
-        setSites(sitesRes.data.data);
       } catch (err) {
         setError('Failed to load form data');
         console.error('Error fetching data:', err);
@@ -62,7 +57,12 @@ const AddMaterialRequest = () => {
     setFormData(prev => ({ ...prev, items: newItems }));
   };
 
+  // Add a new item, maximum of 10 items allowed
   const addNewItem = () => {
+    if (formData.items.length >= 10) {
+      alert('Maximum 10 items are allowed.');
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       items: [
@@ -77,21 +77,44 @@ const AddMaterialRequest = () => {
     }));
   };
 
+  // Remove an item, enforce minimum 1 item remains.
   const removeItem = (index) => {
     if (formData.items.length <= 1) return;
     const newItems = formData.items.filter((_, i) => i !== index);
     setFormData(prev => ({ ...prev, items: newItems }));
   };
 
+  // Helper function to validate duplicate material-unit combinations
+  const hasDuplicateMaterialUnit = () => {
+    const seen = new Set();
+    for (const item of formData.items) {
+      // Only consider valid selections
+      if (item.material_id && item.unit_id) {
+        const key = `${item.material_id}_${item.unit_id}`;
+        if (seen.has(key)) {
+          return true;
+        }
+        seen.add(key);
+      }
+    }
+    return false;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check for duplicate material-unit combinations:
+    if (hasDuplicateMaterialUnit()) {
+      alert('Each item must have a unique combination of material and unit.');
+      return;
+    }
+
     try {
       // Retrieve the user id from AuthService
       const userId = AuthService.getUserId();
 
       // Prepare the final payload in the required format
       const payload = {
-        site_id: Number(formData.site_id),
         requested_by: Number(userId),
         remark: formData.remark,
         items: formData.items.map(item => ({
@@ -108,7 +131,6 @@ const AddMaterialRequest = () => {
       alert('Request submitted successfully!');
       // Reset form after submission
       setFormData({
-        site_id: '',
         remark: '',
         items: [{
           id: Date.now(),
@@ -145,27 +167,7 @@ const AddMaterialRequest = () => {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Site Selection */}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
-            Site <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="site_id"
-            value={formData.site_id}
-            onChange={handleInputChange}
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
-            required
-          >
-            <option value="">Select Site</option>
-            {sites.map(site => (
-              <option key={site.id} value={site.id}>
-                {site.sitename} - {site.siteaddress}, {site.state}
-              </option>
-            ))}
-          </select>
-        </div>
-
+        
         {/* Remarks */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
@@ -264,16 +266,19 @@ const AddMaterialRequest = () => {
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={addNewItem}
-            className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Another Item
-          </button>
+          {/* Add new item button is hidden if already 10 items */}
+          {formData.items.length < 10 && (
+            <button
+              type="button"
+              onClick={addNewItem}
+              className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Another Item
+            </button>
+          )}
         </div>
 
         {/* Form Actions */}

@@ -113,7 +113,7 @@ const router = createBrowserRouter([
       { 
         path: "/AddMaterialRequest", 
         element: (
-          <ProtectedRoute allowedRoles={[ROLES.SITE_ENGINEER]}>
+          <ProtectedRoute allowedRoles={[ROLES.SITE_ENGINEER,ROLES.SITE_MANAGER]}>
             <AddMaterialRequest />
           </ProtectedRoute>
         )

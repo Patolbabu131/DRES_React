@@ -77,9 +77,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
     return initials.length === 1 ? initials + initials : initials;
   };
 
-  const handleDashboardRedirect = () => {
-    navigate('/dashboard');
-  };
+
 
   return (
     <nav className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-darkSurface border-b border-lightPrimary/20 dark:border-darkPrimary/20 z-40 shadow-sm">
@@ -97,7 +95,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
             )}
           </button>
           <h1 
-            onClick={handleDashboardRedirect} 
+           
             className="text-xl font-semibold text-lightPrimary dark:text-darkPrimary cursor-pointer"
           >
             DRE StockLogic
@@ -128,7 +126,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                 {getInitials(userData.name)}
               </div>
               <div className="text-sm font-semibold text-lightPrimary dark:text-darkPrimary">
-                {formatRole(userData.role)}
+                {formatRole(userData.name)}
               </div>
               <FiChevronDown className={`w-4 h-4 text-lightPrimary dark:text-darkPrimary transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -142,7 +140,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-lightPrimary dark:text-darkPrimary">
-                        {userData.name || 'Registered User'}
+                        {formatRole(userData.role)}
                       </div>
                     </div>
                   </div>
@@ -170,13 +168,13 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                     {isDark ? 'Light Mode' : 'Dark Mode'}
                   </button>
 
-                  <button
+                  {/* <button
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm text-lightPrimary dark:text-darkPrimary hover:bg-lightPrimary/10 dark:hover:bg-darkPrimary/10 rounded-md"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     <FiSettings className="w-4 h-4" />
                     Settings
-                  </button>
+                  </button> */}
 
                   <hr className="border-lightPrimary/20 dark:border-darkPrimary/20 my-1" />
 

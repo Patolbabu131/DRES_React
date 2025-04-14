@@ -38,6 +38,14 @@ class TransactionService {
   async getAllTransactions() {
     return this.axiosInstance.get('/GetAllTransactions');
   }
+
+
+
+  async getSiteStock(site_id, material_id, unit_type_id) {
+    return this.axiosInstance.get('/GetSiteStock', {
+      params: { site_id, material_id, unit_type_id }
+    });
+  }
 }
 
 export default new TransactionService();

@@ -13,7 +13,6 @@ const ListRequest = () => {
     search: '',
     site: '',
     userRole: '',
-    userName: '',
     fromDate: '',
     toDate: '',
   });
@@ -36,7 +35,7 @@ useEffect(() => {
       const roleStr = Array.isArray(roles) && roles.length > 0 ? roles[0] : roles;
       setCurrentUserRole(typeof roleStr === 'string' ? roleStr.toLowerCase() : '');
       
-      const response = await RequestService.getRequests(userId);
+      const response = await RequestService.getRequestsList(userId);
       
       if (response.data?.data) {
         const all = response.data.data;
@@ -45,7 +44,19 @@ useEffect(() => {
 
         setUniqueSites([...new Set(all.map(r => r.site_name))]);
         setUniqueUserNames([...new Set(all.map(r => r.requested_by))]);
-        setUniqueUserRoles([...new Set(all.map(r => (r.user_role || '').toLowerCase()))]);
+        setUniqueUserRoles([
+          ...new Set(
+            all.map(r => {
+              // Try to use r.user_role if available, otherwise extract from requested_by.
+              let role = r.user_role;
+              if (!role && r.requested_by) {
+                const matches = r.requested_by.match(/\((.*?)\)/);
+                role = matches ? matches[1] : '';
+              }
+              return role.toLowerCase(); // Normalize to lowercase.
+            })
+          )
+        ]);
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
@@ -59,33 +70,41 @@ useEffect(() => {
     const result = requests.filter(r => {
       const { search, site, userRole, userName, fromDate, toDate } = filters;
       const lowerSearch = search.toLowerCase();
-
-      // Role-based search handling
+  
+      // Role-based search handling for admin
       const matchesSearch = currentUserRole === 'admin' ? (
         r.site_name.toLowerCase().includes(lowerSearch) ||
         r.requested_by.toLowerCase().includes(lowerSearch) ||
         (r.items?.some(item => item.material_name.toLowerCase().includes(lowerSearch)))
       ) : true;
-
-      // Role-based filter handling
+  
+      // Site filter for admin
       const matchesSite = currentUserRole === 'admin' ? (site ? r.site_name === site : true) : true;
-      const matchesUserRole = (currentUserRole === 'admin' || currentUserRole === 'sitemanager') ? 
-        (userRole ? (r.user_role || '').toLowerCase() === userRole.toLowerCase() : true) : true;
-      const matchesUserName = (currentUserRole === 'admin' || currentUserRole === 'sitemanager') ? 
-        (userName ? r.requested_by === userName : true) : true;
-
+  
+      // Extract the role from the requested_by field if r.user_role is not provided
+      let extractedRole = r.user_role;
+      if (!extractedRole && r.requested_by) {
+        const matches = r.requested_by.match(/\((.*?)\)/);
+        extractedRole = matches ? matches[1] : '';
+      }
+      
+      // Role filtering (for admin and sitemanager)
+      const matchesUserRole = (currentUserRole === 'admin' || currentUserRole === 'sitemanager') ?
+        (userRole ? extractedRole.toLowerCase() === userRole.toLowerCase() : true) : true;
+      const matchesUserName = (currentUserRole === 'admin' || currentUserRole === 'sitemanager') ?
+        (userName ? r.requested_by.includes(userName) : true) : true;
+  
       // Date filtering for all roles
       const reqDate = parseISO(r.request_date);
       const matchesFromDate = fromDate ? (
-        isAfter(reqDate, parseISO(fromDate)) || 
+        isAfter(reqDate, parseISO(fromDate)) ||
         format(reqDate, 'yyyy-MM-dd') === format(parseISO(fromDate), 'yyyy-MM-dd')
       ) : true;
-      
       const matchesToDate = toDate ? (
-        isBefore(reqDate, parseISO(toDate)) || 
+        isBefore(reqDate, parseISO(toDate)) ||
         format(reqDate, 'yyyy-MM-dd') === format(parseISO(toDate), 'yyyy-MM-dd')
       ) : true;
-
+  
       return (
         matchesSearch &&
         matchesSite &&
@@ -95,9 +114,10 @@ useEffect(() => {
         matchesToDate
       );
     });
-
+  
     setFilteredRequests(result);
   }, [filters, requests, currentUserRole]);
+  
 
   const handleChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -172,31 +192,20 @@ useEffect(() => {
 
           {/* Admin and Site Manager filters */}
           {(currentUserRole === 'admin' || currentUserRole === 'sitemanager') && (
-            <>
-              <select
-                name="userRole"
-                className="border p-2 rounded"
-                value={filters.userRole}
-                onChange={handleChange}
-              >
-                <option value="">All Roles</option>
-                {uniqueUserRoles.map((role, idx) => (
-                  <option key={idx} value={role}>{role}</option>
-                ))}
-              </select>
-              <select
-                name="userName"
-                className="border p-2 rounded"
-                value={filters.userName}
-                onChange={handleChange}
-              >
-                <option value="">All Users</option>
-                {uniqueUserNames.map((user, idx) => (
-                  <option key={idx} value={user}>{user}</option>
-                ))}
-              </select>
-            </>
-          )}
+          <>
+            <select
+              name="userRole"
+              className="border p-2 rounded"
+              value={filters.userRole}
+              onChange={handleChange}
+            >
+              <option value="">All Roles</option>
+              <option value="sitemanager">Site Manager</option>
+              <option value="siteengineer">Site Engineer</option>
+            </select>
+           
+          </>
+        )}
 
           {/* Date filters for all */}
           <input

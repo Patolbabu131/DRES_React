@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, Eye, Download, RefreshCw } from 'lucide-react';
 import TransactionService from '../../services/TransactionService';
+import AuthService from '../../services/AuthService';
 
 const TransactionItemsModal = ({ isOpen, onClose, items, grandTotal }) => {
   if (!isOpen) return null;
@@ -102,6 +103,8 @@ const TransactionHistoryDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const userId =AuthService.getUserId();
+  const userrole=AuthService.getUserRoles();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -273,12 +276,27 @@ const TransactionHistoryDashboard = () => {
           
           <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
             <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => navigate('/materialtransfer')}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
-                Material Transfer
-              </button>
+            <div>
+                 {/* Show if user has 'admin' role */}
+                {userrole.includes('admin') && (
+                  <button
+                    onClick={() => navigate('/materialtransfer')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                  >
+                    Material Transfer
+                  </button>
+                )}
+
+                {/* Show if user has 'sitemanager' role */}
+                {userrole.includes('sitemanager') && (
+                  <button
+                    onClick={() => navigate('/issueMaterialForm')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                  >
+                    Issue Material
+                  </button>
+                )}
+        </div>
               
               <button
                 onClick={loadTransactions}

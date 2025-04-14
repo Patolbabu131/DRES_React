@@ -25,10 +25,12 @@ class ConsumptionService {
       }
     });
   }
-  
+  async getStock(user_id, material_id, unit_type_id) {
+    return this.axiosInstance.get('/GetStock', {
+      params: { user_id, material_id, unit_type_id }
+    });
+  }
 
-
-  // Get all transactions
   async getConsumption(userId) {
     return this.axiosInstance.get(`/GetConsumption/${userId}`);
   }

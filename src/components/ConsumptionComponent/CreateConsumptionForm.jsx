@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthService from '../../services/AuthService';
-import UserService from '../../services/UserService';
 import MaterialService from '../../services/MaterialService';
 import UnitService from '../../services/UnitService';
 import ConsumptionService from '../../services/ConsumptionService';
@@ -9,13 +8,16 @@ import ConsumptionService from '../../services/ConsumptionService';
 const CreateConsumptionForm = () => {
   const navigate = useNavigate();
   const siteId = AuthService.getSiteId();
+  const userId = AuthService.getUserId();
+
   const [formData, setFormData] = useState({
-    user_id: '',
     date: new Date().toISOString().split('T')[0],
     remark: '',
   });
-  const [items, setItems] = useState([{ id: Date.now(), material_id: '', unit_id: '', quantity: 1 }]);
-  const [users, setUsers] = useState([]);
+  // Initialize quantity to 0 so that the user must enter a valid amount
+  const [items, setItems] = useState([
+    { id: Date.now(), material_id: '', unit_id: '', quantity: 0, currentStock: 0 }
+  ]);
   const [materials, setMaterials] = useState([]);
   const [units, setUnits] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,12 +25,10 @@ const CreateConsumptionForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersRes, materialsRes, unitsRes] = await Promise.all([
-          UserService.getAllUsers(),
+        const [materialsRes, unitsRes] = await Promise.all([
           MaterialService.getAllMaterials(),
           UnitService.getAllUnits()
         ]);
-        setUsers(usersRes.data.data);
         setMaterials(materialsRes.data.data);
         setUnits(unitsRes.data.data);
       } catch (error) {
@@ -38,31 +38,116 @@ const CreateConsumptionForm = () => {
     fetchData();
   }, []);
 
+  // Add a new item row with a maximum of 10 items allowed
   const addItemRow = () => {
-    setItems(prev => [...prev, 
-      { id: Date.now(), material_id: '', unit_id: '', quantity: 1 }
+    if (items.length >= 10) {
+      alert('Maximum 10 items are allowed.');
+      return;
+    }
+    setItems(prev => [
+      ...prev,
+      { id: Date.now(), material_id: '', unit_id: '', quantity: 0, currentStock: 0 }
     ]);
   };
 
+  // Remove an item row, ensuring at least one item remains
   const removeItemRow = (id) => {
-    if (items.length > 1) {
-      setItems(prev => prev.filter(item => item.id !== id));
-    }
+    if (items.length <= 1) return;
+    setItems(prev => prev.filter(item => item.id !== id));
   };
 
+  // Handle changes for each item field.
+  // When material or unit is changed, reset quantity and currentStock,
+  // then fetch current stock if both are selected.
   const handleItemChange = (id, field, value) => {
-    setItems(prev => prev.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setItems(prev =>
+      prev.map(item => {
+        if (item.id === id) {
+          const updatedItem = { ...item };
+
+          if (field === 'material_id' || field === 'unit_id') {
+            updatedItem[field] = value;
+            // Reset quantity and currentStock until updated
+            updatedItem.quantity = 0;
+            updatedItem.currentStock = 0;
+
+            if ((field === 'material_id' ? value : updatedItem.material_id) &&
+                (field === 'unit_id' ? value : updatedItem.unit_id)) {
+              const materialId = field === 'material_id' ? value : updatedItem.material_id;
+              const unitId = field === 'unit_id' ? value : updatedItem.unit_id;
+
+              ConsumptionService.getStock(userId, materialId, unitId)
+                .then(response => {
+                  const stock = response.data;
+                  // If there is any available stock, initialize to 1; else leave as 0.
+                  const initialQuantity = stock > 0 ? 1 : 0;
+                  setItems(prevItems =>
+                    prevItems.map(i =>
+                      i.id === id
+                        ? { ...i, currentStock: stock, quantity: initialQuantity }
+                        : i
+                    )
+                  );
+                })
+                .catch(err => {
+                  console.error("Error fetching stock:", err);
+                });
+            }
+          } else if (field === 'quantity') {
+            const numericValue = parseInt(value, 10);
+            // Always compare directly regardless of truthiness
+            if (numericValue > updatedItem.currentStock) {
+              updatedItem.quantity = updatedItem.currentStock;
+            } else {
+              updatedItem.quantity = numericValue;
+            }
+          } else {
+            updatedItem[field] = value;
+          }
+
+          return updatedItem;
+        }
+        return item;
+      })
+    );
   };
 
+  // Helper function to check for duplicate material-unit combinations
+  const hasDuplicateMaterialUnit = () => {
+    const seen = new Set();
+    for (const item of items) {
+      if (item.material_id && item.unit_id) {
+        const key = `${item.material_id}_${item.unit_id}`;
+        if (seen.has(key)) {
+          return true;
+        }
+        seen.add(key);
+      }
+    }
+    return false;
+  };
+
+  // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
+    // Ensure every item has a quantity greater than 0.
+    if (items.some(item => item.quantity <= 0)) {
+      alert('Quentity must be greater than 0 for all items.');
+      setIsSubmitting(false);
+      return;
+    } 
+    // Validate that there are no duplicate material-unit combinations.
+    if (hasDuplicateMaterialUnit()) {
+      alert('Each item must have a unique combination of material and unit.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    setIsSubmitting(true);
     const payload = {
       site_id: siteId,
-      user_id: parseInt(formData.user_id, 10),
+      user_id: userId,
       date: formData.date,
       remark: formData.remark,
       items: items.map(item => ({
@@ -90,31 +175,18 @@ const CreateConsumptionForm = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1">User *</label>
-            <select
-              className="w-full border p-2 rounded"
-              value={formData.user_id}
-              onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-              required
-            >
-              <option value="">Select User</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>{u.username}</option>
-              ))}
-            </select>
-          </div>
-          <div>
             <label className="block mb-1">Date *</label>
             <input
               type="date"
+              max={new Date().toISOString().split('T')[0]}
               className="w-full border p-2 rounded"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />
+
           </div>
         </div>
-
         <div>
           <label className="block mb-1">Remark</label>
           <textarea
@@ -124,11 +196,10 @@ const CreateConsumptionForm = () => {
             rows="3"
           />
         </div>
-
         <div className="border-t pt-4">
           <h2 className="text-xl font-semibold mb-2">Items</h2>
           {items.map(item => (
-            <div key={item.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2 items-end">
+            <div key={item.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 items-end">
               <div>
                 <label className="block mb-1">Material *</label>
                 <select
@@ -139,11 +210,12 @@ const CreateConsumptionForm = () => {
                 >
                   <option value="">Select Material</option>
                   {materials.map(m => (
-                    <option key={m.id} value={m.id}>{m.material_name}</option>
+                    <option key={m.id} value={m.id}>
+                      {m.material_name}
+                    </option>
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block mb-1">Unit *</label>
                 <select
@@ -154,23 +226,32 @@ const CreateConsumptionForm = () => {
                 >
                   <option value="">Select Unit</option>
                   {units.map(u => (
-                    <option key={u.id} value={u.id}>{u.unitsymbol}</option>
+                    <option key={u.id} value={u.id}>
+                      {u.unitsymbol}
+                    </option>
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block mb-1">Quantity *</label>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   className="w-full border p-2 rounded"
                   value={item.quantity}
                   onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
                   required
                 />
               </div>
-
+              <div>
+                <label className="block mb-1">Current Stock</label>
+                <input
+                  type="number"
+                  className="w-full border p-2 rounded bg-gray-100"
+                  value={item.currentStock}
+                  readOnly
+                />
+              </div>
               <div>
                 <button
                   type="button"
@@ -183,15 +264,16 @@ const CreateConsumptionForm = () => {
               </div>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addItemRow}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Add Item
-          </button>
+          {items.length < 10 && (
+            <button
+              type="button"
+              onClick={addItemRow}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add Item
+            </button>
+          )}
         </div>
-
         <div className="flex justify-end">
           <button
             type="submit"

@@ -47,7 +47,7 @@ const MaterialTransactionForm = () => {
           unitsRes
         ] = await Promise.all([
           SupplerService.getAllSupplier(),
-          ApiClient.getAllSites(),
+          ApiClient.getSitesList(AuthService.getUserId()),
           MaterialService.getAllMaterials(),
           UnitService.getAllUnits()
         ]);
@@ -63,7 +63,12 @@ const MaterialTransactionForm = () => {
     fetchData();
   }, []);
 
+  // Add a new row with a maximum of 10 items allowed
   const addRow = () => {
+    if (rows.length >= 10) {
+      alert('Maximum 10 items are allowed.');
+      return;
+    }
     setRows([
       ...rows,
       {
@@ -80,10 +85,10 @@ const MaterialTransactionForm = () => {
     ]);
   };
 
+  // Remove a row ensuring at least one row remains
   const removeRow = (id) => {
-    if (rows.length > 1) {
-      setRows(rows.filter(row => row.id !== id));
-    }
+    if (rows.length <= 1) return;
+    setRows(rows.filter(row => row.id !== id));
   };
 
   const handleRowChange = (id, field, value) => {
@@ -91,6 +96,7 @@ const MaterialTransactionForm = () => {
       if (row.id === id) {
         const updatedRow = { ...row, [field]: value };
 
+        // Recalculate totals when relevant fields change
         if (['rate', 'quantity', 'gst'].includes(field)) {
           const taxableValue = updatedRow.rate * updatedRow.quantity;
           const gstAmount = taxableValue * (updatedRow.gst / 100);
@@ -104,9 +110,24 @@ const MaterialTransactionForm = () => {
     });
     setRows(updatedRows);
   };
-  const [items, setItems] = useState([
-    { material: '', unitType: '', rate: 0, quantity: 1, gst: 18, total: 0 }
-  ]);
+
+  // Helper function to check for duplicate material-unit combinations
+  const hasDuplicateMaterialUnit = () => {
+    const seen = new Set();
+    for (const row of rows) {
+      // Only consider rows where both material and unitType are selected
+      if (row.material && row.unitType) {
+        const key = `${row.material}_${row.unitType}`;
+        if (seen.has(key)) {
+          return true;
+        }
+        seen.add(key);
+      }
+    }
+    return false;
+  };
+
+  // Calculate totals for display
   const calculateTotals = () => {
     return rows.reduce(
       (acc, row) => {
@@ -121,50 +142,69 @@ const MaterialTransactionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate duplicate material-unit combinations
+    if (hasDuplicateMaterialUnit()) {
+      alert('Each row must have a unique combination of material and unit.');
+      return;
+    }
+
     setIsSubmitting(true);
     
-      const payload = {
-        invoice_number: formData.invoiceNo,
-        transaction_date: new Date(formData.date).toISOString(),
-        request_id: null,
-        remark: formData.remark,
-        form_supplier_id: parseInt(formData.supplier, 10),
-        to_site_id: parseInt(formData.toSite, 10),
-        createdby: AuthService.getUserId(),
-        transaction_type: "inward",
-        items: rows.map(row => ({
-          material_id: parseInt(row.material, 10),
-          unit_type_id: parseInt(row.unitType, 10),
-          quantity: row.quantity,
-          unit_price: row.rate,
-          gst: row.gst,
-          total: row.totalValue
-        }))
-      };
+    const payload = {
+      invoice_number: formData.invoiceNo,
+      transaction_date: new Date(formData.date).toISOString(),
+      request_id: null,
+      remark: formData.remark,
+      form_supplier_id: parseInt(formData.supplier, 10),
+      to_site_id: parseInt(formData.toSite, 10),
+      createdby: AuthService.getUserId(),
+      transaction_type: "inward",
+      items: rows.map(row => ({
+        material_id: parseInt(row.material, 10),
+        unit_type_id: parseInt(row.unitType, 10),
+        quantity: row.quantity,
+        unit_price: row.rate,
+        gst: row.gst,
+        total: row.totalValue
+      }))
+    };
 
-      try {
-        const response = await TransactionService.createSiteTransaction(payload);
-        console.log('API Response:', response.data);
-        alert('Transaction submitted successfully!');
+    try {
+      const response = await TransactionService.createSiteTransaction(payload);
+      console.log('API Response:', response.data);
+      alert('Transaction submitted successfully!');
   
-        // Clear the form
-        setFormData({
-          supplier: '',
-          toSite: '',
-          date: new Date().toISOString().split('T')[0],
-          invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
-          remark: ''
-        });
-        setItems([{ material: '', unitType: '', rate: 0, quantity: 1, gst: 18, total: 0 }]);
+      // Clear the form
+      setFormData({
+        supplier: '',
+        toSite: '',
+        date: new Date().toISOString().split('T')[0],
+        invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
+        remark: ''
+      });
+      setRows([
+        {
+          id: Date.now(),
+          material: '',
+          unitType: '',
+          rate: 0,
+          quantity: 1,
+          taxableValue: 0,
+          gst: 18,
+          gstAmount: 0,
+          totalValue: 0
+        }
+      ]);
   
-        // Redirect to dashboard
-        navigate('/dashboard');
-      } catch (error) {
-        console.error('Error submitting transaction:', error);
-        alert('Error submitting form');
-      } finally {
-        setIsSubmitting(false);
-      }
+      // Redirect to dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error submitting transaction:', error);
+      alert('Error submitting form');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const { taxableValue, gstValue, grandTotal } = calculateTotals();
@@ -244,17 +284,20 @@ const MaterialTransactionForm = () => {
 
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-semibold text-gray-800">Item Details</h2>
-          <button
-            type="button"
-            onClick={addRow}
-            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            disabled={isSubmitting}
-          >
-            <svg className="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            Add Item
-          </button>
+          {/* Only show Add Item button if there are less than 10 rows */}
+          {rows.length < 10 && (
+            <button
+              type="button"
+              onClick={addRow}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={isSubmitting}
+            >
+              <svg className="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Item
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-gray-200 shadow">

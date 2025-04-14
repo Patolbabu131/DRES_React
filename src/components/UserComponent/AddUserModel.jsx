@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+
 import ApiClient from '../../services/ApiClient';
 import { useTheme } from '../context/ThemeContext';
 import { AuthService } from '../../services/AuthService';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import UserService from '../../services/UserService';
+import { useState, useEffect, useMemo } from 'react';
 
 // Validation rules moved outside to prevent re-creation on each render
 const validationRules = {
@@ -56,36 +57,40 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
   const userRoles = AuthService.getUserRoles();
   const isSiteManager = userRoles.includes('sitemanager');
 
-  // Filter role options based on current user role
-  const filteredRoleOptions = isSiteManager
-    ? roleOptions.filter(role => role.id === 2) // Only Site Engineer option
-    : roleOptions;
+  const filteredRoleOptions = useMemo(() => {
+    return isSiteManager ? roleOptions.filter(role => role.id === 2) : roleOptions;
+  }, [isSiteManager]);
+  // For site managers, we only allow the Site Engineer option.
 
-  // When modal opens, reset form data and default the role if necessary
+  // When modal opens, reset form data and errors, and set default role if needed.
   useEffect(() => {
     if (isOpen) {
-      setFormData(initialFormData);
+      // Initialize form without re-setting on every render.
+      setFormData({
+        ...initialFormData,
+        role: isSiteManager && filteredRoleOptions.length > 0 ? String(filteredRoleOptions[0].id) : ''
+      });
       setErrors({});
-
-      if (isSiteManager) {
-        setFormData(prev => ({ ...prev, role: '2' }));
-      }
     }
-  }, [isOpen, isSiteManager]);
+  }, [isOpen, isSiteManager, filteredRoleOptions]);
+  
+  
+  
 
-  // Fetch sites when modal opens
+  // Fetch sites when modal opens.
   useEffect(() => {
     if (isOpen) {
       fetchSites();
     }
   }, [isOpen]);
 
-  // Fetch available sites
+  // Fetch available sites.
   const fetchSites = async () => {
     setIsLoading(true);
     try {
-      const response = await ApiClient.getAllSites();
-      setSites(response.data.data || []);
+      const response = await ApiClient.getSitesList(AuthService.getUserId());
+      const fetchedSites = response.data.data || [];
+      setSites(fetchedSites);
     } catch (error) {
       toast.error('Failed to fetch sites');
       console.error('Error fetching sites:', error);
@@ -94,50 +99,42 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // Reset form when modal closes
+  // If current user is a site manager, set the default site once sites are fetched.
   useEffect(() => {
-    if (!isOpen) {
-      setFormData(initialFormData);
-      setErrors({});
+    if (isOpen && isSiteManager && sites.length > 0) {
+      setFormData(prev => ({ ...prev, siteId: String(sites[0].id) }));
     }
-  }, [isOpen]);
+  }, [isOpen, isSiteManager, sites]);
+  
 
-  // Optimized validation function
+  // Field validation.
   const validateField = (name, value) => {
     const rules = validationRules[name];
     if (!rules) return '';
-
     if (rules.required && !value) return rules.message.required;
     if (rules.minLength && value.length < rules.minLength) return rules.message.minLength;
     if (rules.pattern && !rules.pattern.test(value)) return rules.message.pattern;
-
     return '';
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Only validate on change for fields the user has interacted with
     const error = validateField(name, value);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate all fields before submission
     const validationErrors = {};
     Object.entries(formData).forEach(([key, value]) => {
       const error = validateField(key, value);
       if (error) validationErrors[key] = error;
     });
-
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
     setIsSubmitting(true);
     try {
       const userId = AuthService.getUserId();
@@ -148,7 +145,6 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
         siteId: parseInt(formData.siteId),
         createdById: userId
       });
-
       if (onSuccess) onSuccess(response.data.data);
       setFormData(initialFormData);
       onClose();
@@ -163,37 +159,37 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
 
   if (!isOpen) return null;
 
-  // Pre-compute common class strings for better readability and performance
+  // Pre-compute class strings for inputs.
   const inputBaseClasses = `block w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2 ${
     isDark ? 'bg-darkBackground/20' : 'bg-lightBackground'
   }`;
 
-  const getInputClasses = (fieldName) => `${inputBaseClasses} ${
-    errors[fieldName]
-      ? 'border-red-500 focus:ring-red-500' 
-      : isDark 
-        ? 'border-gray-600 focus:ring-darkPrimary' 
-        : 'border-gray-300 focus:ring-lightPrimary'
-  }`;
+  const getInputClasses = (fieldName) =>
+    `${inputBaseClasses} ${
+      errors[fieldName]
+        ? 'border-red-500 focus:ring-red-500'
+        : isDark
+          ? 'border-gray-600 focus:ring-darkPrimary'
+          : 'border-gray-300 focus:ring-lightPrimary'
+    }`;
 
   return (
-    <div 
+    <div
       role="dialog"
       className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm overscroll-contain"
       aria-modal="true"
-    > 
-      <div 
-        className={`rounded-xl p-6 w-full max-w-2xl mx-auto border overflow-y-auto max-h-[90vh]
-          ${isDark ? 'bg-darkSurface text-gray-100 border-darkPrimary/20' : 'bg-lightSurface text-gray-900 border-gray-200'} 
-          shadow-lg transition-colors`}
+    >
+      <div
+        className={`rounded-xl p-6 w-full max-w-2xl mx-auto border overflow-y-auto max-h-[90vh] ${
+          isDark
+            ? 'bg-darkSurface text-gray-100 border-darkPrimary/20'
+            : 'bg-lightSurface text-gray-900 border-gray-200'
+        } shadow-lg transition-colors`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-semibold mb-6">
-          Add New User
-        </h2>
-        
+        <h2 className="text-xl font-semibold mb-6">Add New User</h2>
         <form onSubmit={handleSubmit} noValidate>
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             {/* Username */}
             <div className="sm:col-span-1">
               <label className="block text-sm font-medium mb-2">
@@ -210,7 +206,9 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={isSubmitting}
               />
               {errors.username && (
-                <p className="text-red-500 text-xs mt-1" id="username-error">{errors.username}</p>
+                <p className="text-red-500 text-xs mt-1" id="username-error">
+                  {errors.username}
+                </p>
               )}
             </div>
 
@@ -230,7 +228,9 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={isSubmitting}
               />
               {errors.phone && (
-                <p className="text-red-500 text-xs mt-1" id="phone-error">{errors.phone}</p>
+                <p className="text-red-500 text-xs mt-1" id="phone-error">
+                  {errors.phone}
+                </p>
               )}
             </div>
 
@@ -245,9 +245,12 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                 onChange={handleChange}
                 className={`${getInputClasses('role')} appearance-none`}
                 aria-invalid={!!errors.role}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSiteManager} // Disabled for site managers
               >
-                <option value="" className={isDark ? 'bg-darkSurface text-gray-100' : 'bg-lightSurface text-gray-900'}>
+                <option
+                  value=""
+                  className={isDark ? 'bg-darkSurface text-gray-100' : 'bg-lightSurface text-gray-900'}
+                >
                   Select Role
                 </option>
                 {filteredRoleOptions.map((role) => (
@@ -260,9 +263,7 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                   </option>
                 ))}
               </select>
-              {errors.role && (
-                <p className="text-red-500 text-xs mt-1">{errors.role}</p>
-              )}
+              {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
             </div>
 
             {/* Site Selection */}
@@ -276,11 +277,17 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                 onChange={handleChange}
                 className={`${getInputClasses('siteId')} appearance-none`}
                 aria-invalid={!!errors.siteId}
-                disabled={isSubmitting || isLoading}
+                disabled={isSubmitting || isLoading || isSiteManager} // Disabled for site managers
               >
-                <option value="" className={isDark ? 'bg-darkSurface text-gray-100' : 'bg-lightSurface text-gray-900'}>
-                  {isLoading ? 'Loading sites...' : 'Select Site'}
-                </option>
+                {/* For non-site managers, show the "Select Site" option */}
+                {!isSiteManager && (
+                  <option
+                    value=""
+                    className={isDark ? 'bg-darkSurface text-gray-100' : 'bg-lightSurface text-gray-900'}
+                  >
+                    {isLoading ? 'Loading sites...' : 'Select Site'}
+                  </option>
+                )}
                 {sites.map((site) => (
                   <option
                     key={site.id}
@@ -291,9 +298,7 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
                   </option>
                 ))}
               </select>
-              {errors.siteId && (
-                <p className="text-red-500 text-xs mt-1">{errors.siteId}</p>
-              )}
+              {errors.siteId && <p className="text-red-500 text-xs mt-1">{errors.siteId}</p>}
             </div>
           </div>
 
@@ -301,11 +306,11 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
             <button
               type="button"
               onClick={onClose}
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors 
-                ${isDark 
-                  ? 'bg-darkBackground/30 text-gray-300 hover:bg-darkBackground/50' 
-                  : 'bg-gray-50 text-gray-900 hover:bg-gray-100'}
-              `}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                isDark
+                  ? 'bg-darkBackground/30 text-gray-300 hover:bg-darkBackground/50'
+                  : 'bg-gray-50 text-gray-900 hover:bg-gray-100'
+              }`}
               disabled={isSubmitting}
             >
               Cancel
