@@ -17,10 +17,10 @@ const MaterialTransactionForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     supplier: '',
-    toSite: '',
+    toSite: '1', // default to HO Stock (ID 1)
     date: new Date().toISOString().split('T')[0],
     remark: '',
-    invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`
+    invoiceNo: '' // user must enter
   });
 
   const [rows, setRows] = useState([
@@ -63,7 +63,6 @@ const MaterialTransactionForm = () => {
     fetchData();
   }, []);
 
-  // Add a new row with a maximum of 10 items allowed
   const addRow = () => {
     if (rows.length >= 10) {
       alert('Maximum 10 items are allowed.');
@@ -85,7 +84,6 @@ const MaterialTransactionForm = () => {
     ]);
   };
 
-  // Remove a row ensuring at least one row remains
   const removeRow = (id) => {
     if (rows.length <= 1) return;
     setRows(rows.filter(row => row.id !== id));
@@ -96,7 +94,6 @@ const MaterialTransactionForm = () => {
       if (row.id === id) {
         const updatedRow = { ...row, [field]: value };
 
-        // Recalculate totals when relevant fields change
         if (['rate', 'quantity', 'gst'].includes(field)) {
           const taxableValue = updatedRow.rate * updatedRow.quantity;
           const gstAmount = taxableValue * (updatedRow.gst / 100);
@@ -111,11 +108,9 @@ const MaterialTransactionForm = () => {
     setRows(updatedRows);
   };
 
-  // Helper function to check for duplicate material-unit combinations
   const hasDuplicateMaterialUnit = () => {
     const seen = new Set();
     for (const row of rows) {
-      // Only consider rows where both material and unitType are selected
       if (row.material && row.unitType) {
         const key = `${row.material}_${row.unitType}`;
         if (seen.has(key)) {
@@ -127,7 +122,6 @@ const MaterialTransactionForm = () => {
     return false;
   };
 
-  // Calculate totals for display
   const calculateTotals = () => {
     return rows.reduce(
       (acc, row) => {
@@ -142,15 +136,17 @@ const MaterialTransactionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate duplicate material-unit combinations
+    if (!formData.invoiceNo) {
+      alert('Invoice number is required.');
+      return;
+    }
     if (hasDuplicateMaterialUnit()) {
       alert('Each row must have a unique combination of material and unit.');
       return;
     }
 
     setIsSubmitting(true);
-    
+
     const payload = {
       invoice_number: formData.invoiceNo,
       transaction_date: new Date(formData.date).toISOString(),
@@ -174,13 +170,12 @@ const MaterialTransactionForm = () => {
       const response = await TransactionService.createSiteTransaction(payload);
       console.log('API Response:', response.data);
       alert('Transaction submitted successfully!');
-  
-      // Clear the form
+
       setFormData({
         supplier: '',
-        toSite: '',
+        toSite: '1',
         date: new Date().toISOString().split('T')[0],
-        invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
+        invoiceNo: '',
         remark: ''
       });
       setRows([
@@ -196,8 +191,7 @@ const MaterialTransactionForm = () => {
           totalValue: 0
         }
       ]);
-  
-      // Redirect to dashboard
+
       navigate('/dashboard');
     } catch (error) {
       console.error('Error submitting transaction:', error);
@@ -211,8 +205,7 @@ const MaterialTransactionForm = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-2 sm:p-4 bg-white rounded-lg shadow-lg">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Material Transaction Form</h1>
-      
+      <h1 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Inward Transaction</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
@@ -232,18 +225,13 @@ const MaterialTransactionForm = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">To Site*</label>
+            <label className="block text-sm font-medium text-gray-700">To *</label>
             <select
-              className="block w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+              className="block w-full p-2.5 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
               value={formData.toSite}
-              onChange={(e) => setFormData({ ...formData, toSite: e.target.value })}
-              required
-              disabled={isSubmitting}
+              disabled
             >
-              <option value="">Select Destination Site</option>
-              {sites.map(site => (
-                <option key={site.id} value={site.id}>{site.sitename}</option>
-              ))}
+              <option value="1">HO Stock</option>
             </select>
           </div>
         </div>
@@ -262,12 +250,14 @@ const MaterialTransactionForm = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Invoice No</label>
+            <label className="block text-sm font-medium text-gray-700">Invoice No*</label>
             <input
               type="text"
-              className="block w-full p-2.5 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+              className="block w-full p-2.5 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
               value={formData.invoiceNo}
-              readOnly
+              onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })}
+              required
+              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -281,6 +271,9 @@ const MaterialTransactionForm = () => {
             />
           </div>
         </div>
+
+
+
 
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-semibold text-gray-800">Item Details</h2>

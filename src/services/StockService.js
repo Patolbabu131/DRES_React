@@ -21,9 +21,15 @@ class StockService {
 
 
   // Get all transactions
-  async getAllStocks() {
-    return this.axiosInstance.get('/GetAllStocks');
+  // async getAllStocks() {
+  //   return this.axiosInstance.get('/GetAllStocks');
+  // }
+  async getAllStocks(userId) {
+    // GET /api/Stock/123
+    return this.axiosInstance.get(`/GetAllStocks/${userId}`);
   }
+  
+  
 }
 
 export default new StockService();
