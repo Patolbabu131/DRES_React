@@ -19,6 +19,7 @@ import AddMaterialRequest from './components/RequestComponent/AddMaterialRequest
 import TransactionHistoryDashboard from './components/TransactionComponent/TransactionHistoryDashboard';
 import ListStock from './components/StockComponent/ListStock';
 import IssueMaterialForm from './components/TransactionComponent/IssueMaterialForm';
+import IssueMaterialToSiteForm from './components/TransactionComponent/IssueMaterialToSiteForm';
 import ListConsumption from './components/ConsumptionComponent/ListConsumption';
 import CreateConsumptionForm from './components/ConsumptionComponent/CreateConsumptionForm';
 
@@ -119,10 +120,34 @@ const router = createBrowserRouter([
         )
       },
       { 
-        path: "/IssueMaterialForm", 
+        path: "/IssueMaterialForm/:requestId", 
         element: (
-          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER, ROLES.SITE_ENGINEER]}>
+          <ProtectedRoute allowedRoles={[ROLES.SITE_MANAGER]}>
             <IssueMaterialForm />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/IssueMaterialForm/", 
+        element: (
+          <ProtectedRoute allowedRoles={[ ROLES.SITE_MANAGER]}>
+            <IssueMaterialForm />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/IssueMaterialToSiteForm/", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <IssueMaterialToSiteForm />
+          </ProtectedRoute>
+        )
+      },
+      { 
+        path: "/IssueMaterialToSiteForm/:requestId", 
+        element: (
+          <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <IssueMaterialToSiteForm />
           </ProtectedRoute>
         )
       },
@@ -153,7 +178,7 @@ const router = createBrowserRouter([
       { 
         path: "/consumptionform", 
         element: (
-          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SITE_MANAGER, ROLES.SITE_ENGINEER]}>
+          <ProtectedRoute allowedRoles={[ ROLES.SITE_ENGINEER]}>
             <CreateConsumptionForm />
           </ProtectedRoute>
         )

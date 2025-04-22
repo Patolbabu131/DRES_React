@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import StockService from '../../services/StockService';
 import AuthService from '../../services/AuthService';
+import RoleBasedContent from '../context/RoleBasedContent';
 
 const ListStock = () => {
   const [sites, setSites] = useState([]);
@@ -178,8 +179,9 @@ const ListStock = () => {
                     <tr>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Material</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
+                      <RoleBasedContent allowedRoles={['admin', 'sitemanager']}> 
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Site Stock</th>
-                     
+                      </RoleBasedContent>
                       {users.map(user => (
                         <th key={user} className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{user}</th>
                       ))}
@@ -190,8 +192,9 @@ const ListStock = () => {
                       <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-darkPrimary/10">
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{row.materialName}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{row.unitName}</td>
+                        <RoleBasedContent allowedRoles={['admin', 'sitemanager']}> 
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">{row.siteStock}</td>
-                        
+                        </RoleBasedContent>
                         {users.map(user => (
                           <td key={user} className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">{row.engineerStocks[user] || 0}</td>
                         ))}

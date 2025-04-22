@@ -51,7 +51,7 @@ const Layout = () => {
     { name: 'Material', icon: <RiArchiveLine />, segment: 'materials', path: '/material', roles: ['admin'] },
     { name: 'Request', icon: <RiSendPlaneLine />, segment: 'request', path: '/listrequest', roles: ['admin', 'sitemanager', 'siteengineer'] },
     { name: 'Consumption', icon: <RiScissorsCutLine />, segment: 'consumption', path: '/consumption', roles: ['admin', 'sitemanager', 'siteengineer'] },
-    { name: 'Push Notification', icon: <RiMegaphoneLine />, segment: 'Notification', path: '/template', roles: ['admin', 'sitemanager'] },
+    // { name: 'Push Notification', icon: <RiMegaphoneLine />, segment: 'Notification', path: '/template', roles: ['admin', 'sitemanager'] },
   ];
 
   // Filter navigation based on the user's roles

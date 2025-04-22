@@ -40,7 +40,15 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         return roleString.charAt(0).toUpperCase() + roleString.slice(1);
     }
   };
-
+  useEffect(() => {
+    const hasReloaded = sessionStorage.getItem('navbarReloaded');
+  
+    if (!hasReloaded) {
+      sessionStorage.setItem('navbarReloaded', 'true');
+      window.location.reload();
+    }
+  }, []);
+  
   useEffect(() => {
     const fetchUserData = () => {
       const name = AuthService.getUsername();
@@ -103,7 +111,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         </div>
 
         <div className="flex items-center gap-4 relative" ref={dropdownRef}>
-          <div className="relative">
+          {/* <div className="relative">
             <button
               className="p-2 rounded-lg text-lightPrimary dark:text-darkPrimary hover:bg-lightPrimary/20 dark:hover:bg-darkPrimary/20 transition-colors"
               aria-label="Notifications"
@@ -115,7 +123,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                 </span>
               )}
             </button>
-          </div>
+          </div> */}
 
           <div className="relative">
             <button
@@ -126,7 +134,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
                 {getInitials(userData.name)}
               </div>
               <div className="text-sm font-semibold text-lightPrimary dark:text-darkPrimary">
-                {formatRole(userData.name)}
+                {(userData.name)}
               </div>
               <FiChevronDown className={`w-4 h-4 text-lightPrimary dark:text-darkPrimary transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>

@@ -20,9 +20,9 @@ const ListRequest = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [expandedRows, setExpandedRows] = useState({}); // Added for expanded rows
-
-  // Filter states
+  const [expandedRows, setExpandedRows] = useState({});
+  const roles = AuthService.getUserRoles();
+  const roleStr = Array.isArray(roles) && roles.length > 0 ? roles[0] : roles;
   const [filters, setFilters] = useState({
     search: '',
     site: '',
@@ -32,12 +32,10 @@ const ListRequest = () => {
     toDate: '',
   });
 
-  // Populate dropdowns
   const [uniqueSites, setUniqueSites] = useState([]);
   const [uniqueUserNames, setUniqueUserNames] = useState([]);
   const [uniqueUserRoles, setUniqueUserRoles] = useState([]);
 
-  // Map header names to actual request object keys
   const headerToKeyMap = {
     'ID': 'id',
     'Site': 'site_name',
@@ -46,29 +44,13 @@ const ListRequest = () => {
     'Status': 'status',
   };
 
-  // Set dark mode
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     document.body.style.backgroundColor = isDark ? '#000' : '';
   }, [isDark]);
 
-  // Check screen size and adjust view mode
-  useEffect(() => {
-    const handleResize = () => {
-      setViewMode(window.innerWidth < 768 ? 'cards' : 'table');
-    };
+  
 
-    // Initial check
-    handleResize();
-
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       if (effectRan.current) return;
@@ -76,13 +58,10 @@ const ListRequest = () => {
       setIsLoading(true);
       try {
         const userId = AuthService.getUserId();
-        const roles = AuthService.getUserRoles();
-        // If roles is an array, use its first element
-        const roleStr = Array.isArray(roles) && roles.length > 0 ? roles[0] : roles;
+       
         setCurrentUserRole(typeof roleStr === 'string' ? roleStr.toLowerCase() : '');
-        
+
         const response = await RequestService.getRequestsList(userId);
-        
         if (response.data?.data) {
           const all = response.data.data;
           setRequests(all);
@@ -93,13 +72,12 @@ const ListRequest = () => {
           setUniqueUserRoles([
             ...new Set(
               all.map(r => {
-                // Try to use r.user_role if available, otherwise extract from requested_by
                 let role = r.user_role;
                 if (!role && r.requested_by) {
                   const matches = r.requested_by.match(/\((.*?)\)/);
                   role = matches ? matches[1] : '';
                 }
-                return role.toLowerCase(); // Normalize to lowercase
+                return role.toLowerCase();
               }).filter(Boolean)
             )
           ]);
@@ -114,38 +92,31 @@ const ListRequest = () => {
     fetchData();
   }, [setIsLoading]);
 
-  // Filter logic
   useEffect(() => {
     const result = requests.filter(r => {
       const { search, site, userRole, userName, fromDate, toDate } = filters;
       const lowerSearch = search.toLowerCase();
-  
-      // Search functionality
+
       const matchesSearch = search ? (
         r.site_name?.toLowerCase().includes(lowerSearch) ||
         r.requested_by?.toLowerCase().includes(lowerSearch) ||
         (r.items?.some(item => item.material_name?.toLowerCase().includes(lowerSearch)))
       ) : true;
-  
-      // Site filter
+
       const matchesSite = site ? r.site_name === site : true;
-  
-      // Extract the role from the requested_by field if r.user_role is not provided
+
       let extractedRole = r.user_role;
       if (!extractedRole && r.requested_by) {
         const matches = r.requested_by.match(/\((.*?)\)/);
         extractedRole = matches ? matches[1] : '';
       }
-      
-      // Role filtering
+
       const matchesUserRole = userRole ? 
         extractedRole?.toLowerCase() === userRole.toLowerCase() : true;
-      
-      // User name filtering
+
       const matchesUserName = userName ? 
         r.requested_by?.includes(userName) : true;
-  
-      // Date filtering
+
       const reqDate = r.request_date ? parseISO(r.request_date) : null;
       const matchesFromDate = fromDate && reqDate ? (
         isAfter(reqDate, parseISO(fromDate)) ||
@@ -155,7 +126,7 @@ const ListRequest = () => {
         isBefore(reqDate, parseISO(toDate)) ||
         format(reqDate, 'yyyy-MM-dd') === format(parseISO(toDate), 'yyyy-MM-dd')
       ) : true;
-  
+
       return (
         matchesSearch &&
         matchesSite &&
@@ -165,14 +136,13 @@ const ListRequest = () => {
         matchesToDate
       );
     });
-  
+
     setFilteredRequests(result);
   }, [filters, requests]);
 
-  // Handle sort
   const handleSort = (header) => {
     const key = headerToKeyMap[header];
-    if (!key) return; // If header is not sortable, do nothing
+    if (!key) return;
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -180,26 +150,23 @@ const ListRequest = () => {
     setSortConfig({ key, direction });
   };
 
-  // Sort filtered requests
   const sortedRequests = [...filteredRequests].sort((a, b) => {
     if (!sortConfig.key) return 0;
-    
-    // Special handling for request_date
+
     if (sortConfig.key === 'request_date') {
       const dateA = a[sortConfig.key] ? new Date(a[sortConfig.key]) : new Date(0);
       const dateB = b[sortConfig.key] ? new Date(b[sortConfig.key]) : new Date(0);
       return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
     }
-    
+
     const valA = a[sortConfig.key] || '';
     const valB = b[sortConfig.key] || '';
-    
+
     if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
     if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;
   });
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = sortedRequests.slice(indexOfFirstItem, indexOfLastItem);
@@ -235,60 +202,112 @@ const ListRequest = () => {
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
-
-  const getForwardedStatus = (forwarded) => {
-    return forwarded ? 
-      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
-      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  const handleForwardToHO = async (requestId) => {
+    try {
+      const userId = AuthService.getUserId();
+      if (!userId) {
+        toast.error('User not authenticated');
+        return;
+      }
+  
+      const isConfirmed = window.confirm('Are you sure you want to forward this request to Head Office?');
+      if (!isConfirmed) return;
+  
+      const loadingToast = toast.loading('Forwarding request...');
+      
+      try {
+        await RequestService.forwardToHO(requestId, userId);
+        toast.success('Request forwarded successfully', { id: loadingToast });
+        
+        // Refresh requests instead of full page reload
+        const refreshed = await RequestService.getRequestsList(userId);
+        if (refreshed.data?.data) {
+          setRequests(refreshed.data.data);
+          setFilteredRequests(refreshed.data.data);
+        }
+      } catch (error) {
+        console.error('Forward error:', error);
+        toast.error(error.response?.data?.message || 'Failed to forward request', { id: loadingToast });
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast.error('An unexpected error occurred');
+    }
   };
-
   const handleNewRequest = () => {
     navigate('/AddMaterialRequest');
   };
+  
+  
+  const handleApprove = (requestId) => {
+    if (roleStr === 'admin') {
+      navigate(`/IssueMaterialToSiteForm/${requestId}`);
+    }
+    else if (roleStr === 'sitemanager') {
+      navigate(`/IssueMaterialForm/${requestId}`);
+    }
+    else {
+      alert("You don’t have permission to approve this request");
+    }
+  };
 
-  // Table headers
+  const handleReject = async (requestId) => {
+    try {
+      // Get user ID from auth service
+      const userId = AuthService.getUserId();
+      if (!userId) {
+        toast.error('User not authenticated');
+        return;
+      }
+  
+      // Simple confirmation dialog
+      const isConfirmed = window.confirm('Are you sure you want to reject this request?');
+      if (!isConfirmed) return;
+  
+      // Show loading state
+      const loadingToast = toast.loading('Rejecting request...');
+  
+      // Execute rejection
+      try {
+        await RequestService.rejectRequest(requestId, userId);
+
+        toast.success('Request rejected successfully', { id: loadingToast });
+        const refreshed = await RequestService.getRequestsList(userId);
+        
+        
+        
+
+        if (refreshed.data?.data) {
+          setRequests(refreshed.data.data);
+          setFilteredRequests(refreshed.data.data);
+        }
+      } catch (error) {
+        console.error('Rejection error:', error);
+        toast.error(error.response?.data?.message || 'Failed to reject request', { id: loadingToast });
+      }
+  
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+  
+
+  
   const tableHeaders = ['ID', 'Site', 'Requested By', 'Date', 'Status', 'Actions'];
 
   return (
     <div className="container mx-auto px-5 sm:px-4 max-w-7xl min-h-screen relative">
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3 py-3">
-        {/* Title and Toggle Button in same row for mobile */}
         <div className="w-full flex justify-between items-center">
           <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
             Material Requests
           </h1>
-          {/* View toggle for mobile - now inline with title */}
-          <div className="sm:hidden flex">
-            <button
-              onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
-              className="flex items-center text-xs bg-gray-100 hover:bg-gray-200 dark:bg-darkSurface/50 dark:hover:bg-darkSurface/70 px-3 py-1.5 rounded-md border border-gray-200 dark:border-darkPrimary/20 transition-colors duration-200"
-            >
-              {viewMode === 'table' ? (
-                <>
-                  <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
-                    <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                  Card View
-                </>
-              ) : (
-                <>
-                  <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  Table View
-                </>
-              )}
-            </button>
-          </div>
+  
         </div>
 
-        {/* Filter Controls */}
         <div className="flex flex-col w-full sm:flex-row gap-3 sm:gap-2">
-          {/* Search Input */}
           <input
             type="text"
             name="search"
@@ -298,8 +317,6 @@ const ListRequest = () => {
             onChange={handleChange}
             disabled={isLoading}
           />
-
-          {/* Admin filter dropdowns */}
           <RoleBasedContent allowedRoles={['admin']}>
             <select
               name="site"
@@ -314,8 +331,6 @@ const ListRequest = () => {
               ))}
             </select>
           </RoleBasedContent>
-
-          {/* Admin and Site Manager filter dropdowns */}
           <RoleBasedContent allowedRoles={['admin', 'sitemanager']}>
             <select
               name="userRole"
@@ -329,8 +344,6 @@ const ListRequest = () => {
               <option value="siteengineer">Site Engineer</option>
             </select>
           </RoleBasedContent>
-
-          {/* Date filters */}
           <input
             type="date"
             name="fromDate"
@@ -347,8 +360,6 @@ const ListRequest = () => {
             onChange={handleChange}
             disabled={isLoading}
           />
-          
-          {/* Reset filters button */}
           <button 
             className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 sm:py-1.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={clearFilters}
@@ -356,8 +367,6 @@ const ListRequest = () => {
           >
             Reset
           </button>
-          
-          {/* New Request button for Site Manager and Engineer */}
           {(currentUserRole === 'sitemanager' || currentUserRole === 'siteengineer') && (
             <button 
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:py-1.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -371,41 +380,47 @@ const ListRequest = () => {
       </div>
 
       {/* Table View */}
-      {viewMode === 'table' && (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-darkPrimary/20">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-darkPrimary/20">
-            <thead className="bg-gray-50 dark:bg-darkSurface/50">
-              <tr>
-                {tableHeaders.map((header) => (
-                  <th
-                    key={header}
-                    onClick={() => handleSort(header)}
-                    className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-darkPrimary/20"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs">{header}</span>
-                      {headerToKeyMap[header] && sortConfig.key === headerToKeyMap[header] && (
-                        <span className="ml-1.5 text-xs">
-                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-darkSurface divide-y divide-gray-200 dark:divide-darkPrimary/20">
-              {currentItems.length > 0 ? (
-                currentItems.flatMap((request) => {
-                  const requestRow = (
-                    <tr 
-                      key={request.id} 
-                      className="hover:bg-gray-50 dark:hover:bg-darkPrimary/10 cursor-pointer"
-                      onClick={() => navigate(`/MaterialRequest/${request.id}`)}
-                    >
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {request.id}
-                      </td>
+{viewMode === 'table' && (
+  <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-darkPrimary/20">
+    <table className="min-w-full divide-y divide-gray-200 dark:divide-darkPrimary/20">
+      <thead className="bg-gray-50 dark:bg-darkSurface/50">
+        <tr>
+          {tableHeaders.map((header) => (
+            <th
+              key={header}
+              onClick={() => handleSort(header)}
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-darkPrimary/20"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs">{header}</span>
+                {headerToKeyMap[header] && sortConfig.key === headerToKeyMap[header] && (
+                  <span className="ml-1.5 text-xs">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="bg-white dark:bg-darkSurface divide-y divide-gray-200 dark:divide-darkPrimary/20">
+        {currentItems.length > 0 ? (
+          currentItems.flatMap((request) => {
+            const requestRow = (
+              <tr
+                key={request.id}
+                className="hover:bg-gray-50 dark:hover:bg-darkPrimary/10 cursor-pointer"
+                onClick={() =>
+                  setExpandedRows(prev => ({
+                    ...prev,
+                    [request.id]: !prev[request.id]
+                  }))
+                }
+              >
+                {/* Table cells */}
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  {request.id}
+                </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {request.site_name}
                       </td>
@@ -416,24 +431,86 @@ const ListRequest = () => {
                         {request.request_date ? format(parseISO(request.request_date), 'MM/dd/yyyy') : '-'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${getForwardedStatus(request.forwarded_to_ho)}`}>
-                          {request.forwarded_to_ho ? 'Forwarded to HO' : 'Pending Forwarding'}
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(request.status)}`}>
+                          {request.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        <div className="flex items-center gap-2">
-                          <button 
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            aria-label="View"
-                          >
-                            
-                          </button>
+                      
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                        {/* Admin Actions */}
+                        {roleStr === 'admin' && 
+ request.forwarded_to_ho && 
+ (request.status === "Pending" || request.status === "Forwarded To HO") && (
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReject(request.id);
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors dark:bg-red-500 dark:hover:bg-red-600"
+                              >
+                                Reject
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApprove(request.id);
+                                }}
+                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors dark:bg-green-500 dark:hover:bg-green-600"
+                              >
+                                Approve
+                              </button>
+                            </div>
+                          )}
+
+{roleStr === 'sitemanager' &&  (  // Changed to currentUser.siteid
+                              <div className="flex items-center gap-3">
+                                {(request.status === "Pending" || request.status === "Fulfilled To Site"  ) && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReject(request.id);
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors dark:bg-red-500 dark:hover:bg-red-600"
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+
+                                {/* Approve Button - for Pending or Issued to Site */}
+                                {(request.status === "Pending" || request.status === "Fulfilled To Site") && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleApprove(request.id);
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors dark:bg-green-500 dark:hover:bg-green-600"
+                                  >
+                                    Approve
+                                  </button>
+                                )}
+
+                                {/* Forward to HO Button - only for Pending */}
+                                {request.status === "Pending" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleForwardToHO(request.id);
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors dark:bg-blue-500 dark:hover:bg-blue-600"
+                                  >
+                                    Forward To HO
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setExpandedRows(prev => ({ ...prev, [request.id]: !prev[request.id] }));
                             }}
-                            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                            className="p-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 dark:bg-darkPrimary/20 dark:hover:bg-darkPrimary/30 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
                             aria-label={expandedRows[request.id] ? "Collapse" : "Expand"}
                           >
                             {expandedRows[request.id] ? (
@@ -448,13 +525,18 @@ const ListRequest = () => {
                           </button>
                         </div>
                       </td>
-                    </tr>
-                  );
+              </tr>
+            );
+
 
                   if (expandedRows[request.id]) {
                     const expandedRow = (
                       <tr key={`expanded-${request.id}`}>
                         <td colSpan={tableHeaders.length} className="p-4 bg-gray-50 dark:bg-darkSurface/50">
+                        {/* REMARK SECTION */}
+                        <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
+                          Remark: {request.remark || '-'}
+                        </div>
                           <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-darkPrimary/20">
                               <thead>
@@ -462,11 +544,12 @@ const ListRequest = () => {
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Material Name
                                   </th>
+                                
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Quantity
+                                    Unit
                                   </th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Status
+                                    Quantity
                                   </th>
                                 </tr>
                               </thead>
@@ -477,13 +560,12 @@ const ListRequest = () => {
                                       <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
                                         {item.material_name || 'N/A'}
                                       </td>
+                                      
+                                      <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
+                                        {item.unit_name || 'N/A'}
+                                      </td>
                                       <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
                                         {item.quantity || 'N/A'}
-                                      </td>
-                                      <td className="px-4 py-2 text-sm">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(item.status)}`}>
-                                          {item.status || 'Pending'}
-                                        </span>
                                       </td>
                                     </tr>
                                   ))
@@ -513,67 +595,6 @@ const ListRequest = () => {
               )}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Card View for Mobile */}
-      {viewMode === 'cards' && (
-        <div className="grid grid-cols-1 gap-4">
-          {currentItems.length > 0 ? (
-            currentItems.map((request) => (
-              <div 
-                key={request.id} 
-                className="rounded-lg border border-gray-200 dark:border-darkPrimary/20 p-4 bg-white dark:bg-darkSurface"
-               
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">Request #{request.id}</h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">Site: {request.site_name}</p>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${getForwardedStatus(request.forwarded_to_ho)}`}>
-                    {request.forwarded_to_ho ? 'Forwarded to HO' : 'Pending Forwarding'}
-                  </span>
-                </div>
-                <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                  <p className="mb-1">
-                    <span className="font-medium">Requested by:</span> {request.requested_by}
-                  </p>
-                  <p className="mb-1">
-                    <span className="font-medium">Date:</span> {request.request_date ? format(parseISO(request.request_date), 'MM/dd/yyyy') : '-'}
-                  </p>
-                </div>
-                
-                {/* Materials summary */}
-                {request.items && request.items.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-gray-100 dark:border-darkPrimary/10">
-                    <p className="font-medium text-xs text-gray-700 dark:text-gray-300 mb-1">Materials:</p>
-                    <ul className="text-xs text-gray-600 dark:text-gray-400">
-                      {request.items.slice(0, 2).map((item, index) => (
-                        <li key={index} className="flex justify-between items-center py-1">
-                          <span>{item.material_name}</span>
-                          <span className={`px-1.5 py-0.5 rounded-full text-xs ${getStatusColor(item.status)}`}>
-                            {item.status || 'Pending'}
-                          </span>
-                        </li>
-                      ))}
-                      {request.items.length > 2 && (
-                        <li className="text-xs italic text-gray-500 dark:text-gray-400">
-                          +{request.items.length - 2} more items
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-                
-              
-              </div>
-            ))
-          ) : (
-            <div className="text-center p-4 bg-white dark:bg-darkSurface rounded-lg border border-gray-200 dark:border-darkPrimary/20">
-              <p className="text-gray-500 dark:text-gray-400">No requests found</p>
-            </div>
-          )}
         </div>
       )}
 

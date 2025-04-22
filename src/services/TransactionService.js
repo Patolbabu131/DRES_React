@@ -18,14 +18,6 @@ class TransactionService {
   }
 
   // Create a new transaction
-  async createSiteTransaction(data) {
-    return this.axiosInstance.post('/CreateSiteTransaction', data, {
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-  }
-  
   async issueMaterialTransaction(data) {
     return this.axiosInstance.post('/IssueMaterialTransaction', data, {
       headers: {
@@ -33,10 +25,24 @@ class TransactionService {
       }
     });
   }
-
+  
+  async createInterSiteTransaction(data) {
+    return this.axiosInstance.post('/CreateInterSiteTransaction', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+  }
+  async createSiteTransaction (data) {
+    return this.axiosInstance.post('/CreateSiteTransaction', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+  }
   // Get all transactions
-  async getAllTransactions() {
-    return this.axiosInstance.get('/GetAllTransactions');
+  async getAllTransactions(userId) {
+    return this.axiosInstance.get(`/GetAllTransactions/${userId}`);
   }
 
 

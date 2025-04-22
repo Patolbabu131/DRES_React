@@ -308,6 +308,7 @@ const CreateConsumptionForm = () => {
               onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
               rows="3"
               placeholder="Additional notes or details about this consumption"
+              required
             />
           </div>
           

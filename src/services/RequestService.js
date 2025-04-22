@@ -22,7 +22,19 @@ class RequestService {
     return this.axiosInstance.get(`/GetRequestsList/${userId}`);
   }
   
+  async rejectRequest(requestId, userId) {
+    return this.axiosInstance.put(`/RejectRequest/${requestId}/${userId}`);
+  }
 
+  async dropdownRequestList(userId) {
+    return this.axiosInstance.get(`/DropdownRequestList/${userId}`);
+  }
+
+  async getRequestDetails(request_id)
+  {
+    return this.axiosInstance.get(`/GetRequestDetails/${request_id}`);
+  }
+  
   async createRequest(Data) {
     return this.axiosInstance.post('/CreateRequest', Data, {
       headers: {
@@ -31,8 +43,22 @@ class RequestService {
     });
   }
 
- 
+   async forwardToHO(requestId, userId) {
+    return this.axiosInstance.put(`/ForwardToHO/${requestId}/${userId}`);
+  }
   
 }
 
 export default new RequestService();
+
+
+
+
+
+
+
+
+
+
+
+ 

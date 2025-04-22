@@ -155,7 +155,6 @@ const MaterialTransactionForm = () => {
       form_supplier_id: parseInt(formData.supplier, 10),
       to_site_id: parseInt(formData.toSite, 10),
       createdby: AuthService.getUserId(),
-      transaction_type: "inward",
       items: rows.map(row => ({
         material_id: parseInt(row.material, 10),
         unit_type_id: parseInt(row.unitType, 10),
@@ -196,6 +195,9 @@ const MaterialTransactionForm = () => {
     } catch (error) {
       console.error('Error submitting transaction:', error);
       alert('Error submitting form');
+      if (error.response) {
+        console.error("Bad Request:", error.response.data);// show validation messages in UI
+      } 
     } finally {
       setIsSubmitting(false);
     }
@@ -335,7 +337,7 @@ const MaterialTransactionForm = () => {
                     >
                       <option value="">Select Unit</option>
                       {units.map(unit => (
-                        <option key={unit.id} value={unit.id}>{unit.unitsymbol}</option>
+                        <option key={unit.id} value={unit.id}> {unit.unitname} ({unit.unitsymbol})</option>
                       ))}
                     </select>
                   </td>
