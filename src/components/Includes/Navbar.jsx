@@ -57,6 +57,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed, isMobile }) => {
         ? roles[0] 
         : 'User';
       setUserData({ name, role: primaryRole });
+
     };
     fetchUserData();
   }, []);

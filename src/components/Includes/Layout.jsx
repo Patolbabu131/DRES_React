@@ -54,7 +54,6 @@ const Layout = () => {
     // { name: 'Push Notification', icon: <RiMegaphoneLine />, segment: 'Notification', path: '/template', roles: ['admin', 'sitemanager'] },
   ];
 
-  // Filter navigation based on the user's roles
   const filteredNavigation = navigation.filter((item) => {
     if (!item.roles) return true; // Show items without roles to everyone
     return item.roles.some((role) => hasRole(role)); // Check if user has at least one required role
@@ -162,5 +161,4 @@ const Layout = () => {
     </div>
   );
 };
-
 export default Layout;
