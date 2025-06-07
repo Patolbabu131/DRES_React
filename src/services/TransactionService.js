@@ -47,6 +47,7 @@ class TransactionService {
 
 
 
+
   async getSiteStock(site_id, material_id, unit_type_id) {
     return this.axiosInstance.get('/GetSiteStock', {
       params: { site_id, material_id, unit_type_id }

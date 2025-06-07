@@ -1,7 +1,22 @@
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
-const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, activeNav, setActiveNav, navigation }) => {
+const Sidebar = ({
+  isCollapsed,
+  setIsCollapsed,
+  isMobile,
+  activeNav,
+  setActiveNav,
+  navigation
+}) => {
+  // helper click handler
+  const handleNavClick = (segment) => {
+    setActiveNav(segment);
+    if (isMobile) {
+      setIsCollapsed(true);
+    }
+  };
+
   return (
     <aside
       className={`fixed top-14 h-[calc(100vh-3rem)] z-30 bg-white/95 dark:bg-darkSurface/95 backdrop-blur-sm border-r border-lightPrimary/20 dark:border-darkPrimary/20 transition-all duration-300 ${
@@ -14,7 +29,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, activeNav, setActiveNa
             <div key={item.segment} className="relative group">
               <Link
                 to={item.path}
-                onClick={() => setActiveNav(item.segment)}
+                onClick={() => handleNavClick(item.segment)}
                 className={`w-auto flex items-center p-3 mx-2 rounded-lg transition-colors ${
                   activeNav === item.segment
                     ? 'bg-lightPrimary/20 dark:bg-darkPrimary/20 text-lightPrimary dark:text-darkPrimary'
@@ -33,7 +48,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, activeNav, setActiveNa
                     <Link
                       key={child.segment}
                       to={child.path}
-                      onClick={() => setActiveNav(child.segment)}
+                      onClick={() => handleNavClick(child.segment)}
                       className={`w-auto flex items-center p-2 rounded-lg transition-colors ${
                         activeNav === child.segment
                           ? 'bg-lightPrimary/20 dark:bg-darkPrimary/20 text-lightPrimary dark:text-darkPrimary'

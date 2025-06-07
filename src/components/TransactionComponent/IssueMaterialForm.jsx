@@ -91,33 +91,36 @@ const IssueMaterialForm = () => {
 
 
   const handleUserSelect = (e) => {
-    const selectedUserId = e.target.value;
-    // update form
-    setFormData(prev => ({ ...prev, to_user_id: selectedUserId, request_id: '' }));
-    // filter requests by user_id
-    if (selectedUserId) {
-      const filtered = allRequests.filter(r => String(r.user_id) === selectedUserId);
-      setRequests(filtered);
-    } else {
-      // reset
-      setRequests(allRequests);
-    }
-  };
+  const selectedUserId = e.target.value;
+  setFormData(prev => ({ ...prev, to_user_id: selectedUserId, request_id: '' }));
+  
+  if (selectedUserId) {
+    const filteredRequests = allRequests.filter(r => String(r.user_id) === selectedUserId);
+    setRequests(filteredRequests);
+  } else {
+    setRequests(allRequests);
+  }
+};
+
   const handleRequestSelect = (e) => {
-    const selectedRequestId = e.target.value;
-    // update form
-    setFormData(prev => ({ ...prev, request_id: selectedRequestId, to_user_id: '' }));
-    // filter users by matching request.user_id
-    if (selectedRequestId) {
-      const req = allRequests.find(r => String(r.id) === selectedRequestId);
-      if (req) {
-        const filtered = allUsers.filter(u => String(u.id) === String(req.user_id));
-        setUsers(filtered);
-      }
-    } else {
-      setUsers(allUsers);
+  const selectedRequestId = e.target.value;
+  setFormData(prev => ({ ...prev, request_id: selectedRequestId }));
+
+  if (selectedRequestId) {
+    const req = allRequests.find(r => String(r.id) === selectedRequestId);
+    if (req) {
+      const matchingUser = allUsers.filter(u => String(u.id) === String(req.user_id));
+      setUsers(matchingUser);
+      setFormData(prev => ({ ...prev, to_user_id: String(req.user_id) }));
     }
-  };
+  }
+};
+const handleResetSelection = () => {
+  setFormData({ to_user_id: '', request_id: '', remark: '' });
+  setUsers(allUsers);
+  setRequests(allRequests);
+};
+
   // Add new item row
   const addItemRow = () => {
     setItems(prev => [
@@ -314,17 +317,28 @@ const IssueMaterialForm = () => {
           ></textarea>
         </div>
           {formData.request_id && (
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={fetchRequestDetails}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                disabled={isSubmitting} 
-              >View Request Details</button>
-            </div>
+            <div className="flex items-end gap-x-3">
+  <button
+    type="button"
+    onClick={handleResetSelection}
+    className="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400"
+    disabled={isSubmitting}
+  >
+    Reset
+  </button>
+  <button
+    type="button"
+    onClick={fetchRequestDetails}
+    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+    disabled={isSubmitting}
+  >
+    View Request Details
+  </button>
+</div>
           )}
 
-           
+     
+
         </div>
   
 
